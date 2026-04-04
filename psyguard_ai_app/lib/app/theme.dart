@@ -1,0 +1,7 @@
+import 'package:flutter/material.dart';
+
+import '../core/theme/app_theme.dart';
+
+ThemeData buildAppTheme() {
+  return PsyGuardTheme.lightTheme;
+}
