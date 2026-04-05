@@ -9,7 +9,11 @@ Future<void> main() async {
   try {
     await dotenv.load(fileName: '.env');
   } catch (_) {
-    // Allow running with --dart-define when .env is unavailable.
+    try {
+      await dotenv.load(fileName: '.env.example');
+    } catch (_) {
+      // Allow running with --dart-define when env files are unavailable.
+    }
   }
   runApp(const ProviderScope(child: PsyGuardApp()));
 }
