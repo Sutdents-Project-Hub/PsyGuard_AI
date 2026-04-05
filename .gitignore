@@ -12,3 +12,6 @@ build/
 **/*.iml
 **/Pods/
 **/DerivedData/
+
+# Trae IDE
+.trae/
