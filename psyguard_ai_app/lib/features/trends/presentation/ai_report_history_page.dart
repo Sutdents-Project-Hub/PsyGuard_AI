@@ -91,7 +91,7 @@ class _ReportCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: PsyGuardTheme.primary.withOpacity(0.1),
+                      color: PsyGuardTheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

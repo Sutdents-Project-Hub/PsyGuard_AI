@@ -337,6 +337,7 @@ class HomePage extends ConsumerWidget {
       ('/tools', '心理工具箱', Icons.style_rounded),
       ('/safety', '安全流程', Icons.health_and_safety_rounded),
       ('/export', '匯出報告', Icons.download_rounded),
+      ('/settings', '設定', Icons.settings_rounded),
     ];
 
     return Drawer(

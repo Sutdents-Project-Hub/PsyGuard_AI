@@ -29,6 +29,12 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
   Future<void> _save() async {
     if (_saving) return;
+    if (_noteController.text.length > 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('補充文字請控制在 200 字內')),
+      );
+      return;
+    }
     setState(() => _saving = true);
 
     try {

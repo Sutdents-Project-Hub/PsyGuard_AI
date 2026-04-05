@@ -19,6 +19,7 @@ class ExportPage extends ConsumerStatefulWidget {
 
 class _ExportPageState extends ConsumerState<ExportPage> {
   bool _exporting = false;
+  int _days = 7;
 
   Future<void> _export() async {
     if (_exporting) return;
@@ -26,7 +27,7 @@ class _ExportPageState extends ConsumerState<ExportPage> {
 
     try {
       final service = ref.read(summaryExportServiceProvider);
-      final file = await service.exportLast7Days(format: ExportFormat.json);
+      final file = await service.exportSummary(days: _days, format: ExportFormat.json);
 
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -76,8 +77,8 @@ class _ExportPageState extends ConsumerState<ExportPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    '7 日身心報告',
+                  Text(
+                    '$_days 日身心報告',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -86,13 +87,42 @@ class _ExportPageState extends ConsumerState<ExportPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '將近 7 天的心情、睡眠、風險趨勢摘要匯出為 JSON，可分享給專業人員。',
+                    '將近 $_days 天的心情、睡眠、風險趨勢摘要匯出為 JSON，可分享給專業人員。',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
                       color: PsyGuardTheme.textSecondary,
                       height: 1.5,
                     ),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      for (final days in [7, 14, 30])
+                        FilterChip(
+                          label: Text('$days 天'),
+                          selected: _days == days,
+                          showCheckmark: false,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _days = days);
+                            }
+                          },
+                          selectedColor: PsyGuardTheme.primary,
+                          backgroundColor: PsyGuardTheme.surface,
+                          labelStyle: TextStyle(
+                            color: _days == days
+                                ? Colors.white
+                                : PsyGuardTheme.textSecondary,
+                            fontWeight: _days == days
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 28),
                   SizedBox(

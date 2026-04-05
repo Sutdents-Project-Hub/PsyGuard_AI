@@ -23,21 +23,30 @@ class SummaryExportService {
   final AppDatabase _db;
   final Future<Directory> Function() _directoryProvider;
 
-  Future<File> exportLast7Days({required ExportFormat format}) async {
-    final summary = await _db.buildSummaryData(days: 7);
+  Future<File> exportSummary({
+    required int days,
+    required ExportFormat format,
+  }) async {
+    final summary = await _db.buildSummaryData(days: days);
     final dir = await _directoryProvider();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
     if (format == ExportFormat.json) {
-      final file = File(p.join(dir.path, 'psyguard_summary_$timestamp.json'));
+      final file = File(
+        p.join(dir.path, 'psyguard_summary_${days}d_$timestamp.json'),
+      );
       final encoder = const JsonEncoder.withIndent('  ');
       await file.writeAsString(encoder.convert(summary));
       return file;
     }
 
-    final file = File(p.join(dir.path, 'psyguard_summary_$timestamp.png'));
+    final file = File(p.join(dir.path, 'psyguard_summary_${days}d_$timestamp.png'));
     await file.writeAsBytes(_kSummaryPng);
     return file;
+  }
+
+  Future<File> exportLast7Days({required ExportFormat format}) async {
+    return exportSummary(days: 7, format: format);
   }
 
   static final _kSummaryPng = base64Decode(

@@ -23,10 +23,9 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('copy_help_template_button')),
-      findsOneWidget,
-    );
+    final copyButton = find.byKey(const ValueKey('copy_help_template_button'));
+    await tester.scrollUntilVisible(copyButton, 300);
+    expect(copyButton, findsOneWidget);
 
     await db.close();
   });
