@@ -29,14 +29,20 @@ class MockDataSeeder {
       if (_rng.nextDouble() > 0.95) continue;
 
       // 2.1 Mood (Complex trend)
-      // Use multiple sine waves to create realistic "seasons" of mood
+      // Use multiple sine waves to create realistic "seasons" of mood.
       final trend = sin(i / 20) * 0.8 + sin(i / 7) * 0.3;
-      // Base mood 2, clamped to 0-4 (matching slider range)
-      int mood = (2 + trend + (_rng.nextDouble() - 0.5)).round().clamp(0, 4);
+      final mood = (50 + trend * 18 + (_rng.nextDouble() - 0.5) * 22)
+          .round()
+          .clamp(0, 100);
 
-      // Correlate stress/energy (0-4 range matching CheckinPage sliders)
-      int stress = (4 - mood + _rng.nextInt(2) - 1).clamp(0, 4);
-      int energy = (mood + _rng.nextInt(2)).clamp(0, 4);
+      // Correlate stress/energy with the new 0-100 percentage scale.
+      final stress = (100 - mood + (_rng.nextDouble() - 0.5) * 18)
+          .round()
+          .clamp(0, 100);
+      final energy = (mood + (_rng.nextDouble() - 0.5) * 16).round().clamp(
+        0,
+        100,
+      );
 
       await db.upsertDailyCheckin(
         date: date,
@@ -50,12 +56,10 @@ class MockDataSeeder {
       // 2.2 Sleep (Independent but correlated)
       if (_rng.nextDouble() < 0.9) {
         // 90% chance to have sleep log
-        double sleepBase = mood < 3 ? 5.5 : 7.0;
+        final sleepBase = mood < 45 ? 5.5 : 7.0;
         double sleep = (sleepBase + _rng.nextDouble() * 2.5).clamp(3.0, 10.0);
         sleepVal = sleep;
-        int difficulty = mood <= 1
-            ? (2 + _rng.nextInt(2))
-            : _rng.nextInt(3);
+        int difficulty = mood <= 30 ? (2 + _rng.nextInt(2)) : _rng.nextInt(3);
         difficulty = difficulty.clamp(0, 3);
 
         final bedtime = DateTime(
@@ -78,18 +82,20 @@ class MockDataSeeder {
 
       // 2.3 Risk Snapshot (Simulated)
       String riskLevel = 'low';
-      if (mood <= 1 && stress >= 3) riskLevel = 'medium';
-      if (mood == 0 && stress >= 4 && (sleepVal ?? 7.0) < 5) riskLevel = 'high';
+      if (mood <= 30 && stress >= 70) riskLevel = 'medium';
+      if (mood <= 15 && stress >= 85 && (sleepVal ?? 7.0) < 5) {
+        riskLevel = 'high';
+      }
 
       await db.upsertRiskSnapshot(
         date: date,
         riskLevel: riskLevel,
-        riskScore: (stress * 20 + (4 - mood) * 5).clamp(0, 100),
+        riskScore: (stress * 0.7 + (100 - mood) * 0.3).round().clamp(0, 100),
         reasons: _getRiskReasons(riskLevel),
       );
 
       // 2.4 Tool Usage
-      if (stress > 6 || _rng.nextBool()) {
+      if (stress > 60 || _rng.nextBool()) {
         final toolIds = [
           'breathing_478',
           'grounding_54321',
@@ -112,8 +118,8 @@ class MockDataSeeder {
   }
 
   String _getRandomNote(int mood) {
-    if (mood >= 4) return '今天感覺不錯，工作很順利！';
-    if (mood == 3) return '普通的一天，沒什麼特別的。';
+    if (mood >= 75) return '今天感覺不錯，工作很順利！';
+    if (mood >= 45) return '普通的一天，沒什麼特別的。';
     return '有點累，希望能早點休息。';
   }
 

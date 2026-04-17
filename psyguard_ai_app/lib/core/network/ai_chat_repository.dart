@@ -449,7 +449,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
   @override
   Future<String> generateReport({required String analysisData}) async {
     const systemPrompt =
-        '你是專業的心理健康數據分析師。請分析以下使用者近期數據（包含心情分數 1-5、睡眠時長、風險評估分數）。'
+        '你是專業的心理健康數據分析師。請分析以下使用者近期數據（包含心情百分比 0-100、睡眠時長、風險評估分數）。'
         '請找出數據中的模式、潛在觸發因素，並提供 3 個具體且可行的改善建議。'
         '請保持語氣溫柔、鼓勵且專業。'
         '輸出格式請使用 Markdown，第一行必須是標題「# 心理健康趨勢分析」，接著是重點列點。'

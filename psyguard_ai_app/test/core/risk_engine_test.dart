@@ -14,8 +14,8 @@ void main() {
         toolUsage: const [],
         input: RiskEvaluationInput(
           messagesLast7d: const ['我真的想死，活不下去了'],
-          moodScoresLast14d: const [2, 2, 2],
-          moodScoresLast3d: const [2, 2, 2],
+          moodScoresLast14d: const [50, 50, 50],
+          moodScoresLast3d: const [50, 50, 50],
           sleepDifficultyLast7d: const [1, 1, 1],
           completedToolsLast7d: const [false],
         ),
@@ -33,8 +33,8 @@ void main() {
         toolUsage: const [],
         input: RiskEvaluationInput(
           messagesLast7d: const ['我不想上學', '我沒希望', '我撐不下去'],
-          moodScoresLast14d: const [1, 2, 2, 2, 2, 1, 2],
-          moodScoresLast3d: const [1, 1, 1],
+          moodScoresLast14d: const [25, 35, 35, 35, 35, 25, 35],
+          moodScoresLast3d: const [20, 20, 20],
           sleepDifficultyLast7d: const [2, 2, 3, 2, 2, 2, 1],
           completedToolsLast7d: const [false, false, false],
         ),
@@ -52,8 +52,8 @@ void main() {
         toolUsage: const [],
         input: RiskEvaluationInput(
           messagesLast7d: const ['我想找輔導老師聊聊'],
-          moodScoresLast14d: const [3, 3, 3, 3, 3, 3, 3],
-          moodScoresLast3d: const [3, 3, 3],
+          moodScoresLast14d: const [75, 75, 75, 75, 75, 75, 75],
+          moodScoresLast3d: const [75, 75, 75],
           sleepDifficultyLast7d: const [1, 1, 1, 1, 0, 1, 1],
           completedToolsLast7d: const [true, true, true, true],
         ),

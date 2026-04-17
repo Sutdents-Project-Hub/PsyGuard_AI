@@ -115,7 +115,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -129,6 +129,24 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 3) {
           await m.createTable(chatContextSummaries);
+        }
+        if (from < 4) {
+          await customStatement('''
+            UPDATE daily_checkins
+            SET
+              mood_score = CASE
+                WHEN mood_score BETWEEN 0 AND 4 THEN mood_score * 25
+                ELSE mood_score
+              END,
+              stress_score = CASE
+                WHEN stress_score BETWEEN 0 AND 4 THEN stress_score * 25
+                ELSE stress_score
+              END,
+              energy_score = CASE
+                WHEN energy_score BETWEEN 0 AND 4 THEN energy_score * 25
+                ELSE energy_score
+              END
+          ''');
         }
       },
     );
@@ -254,13 +272,15 @@ class AppDatabase extends _$AppDatabase {
     await into(dailyCheckins).insertOnConflictUpdate(
       DailyCheckinsCompanion.insert(
         date: normalized,
-        moodScore: mood,
-        stressScore: stress,
-        energyScore: energy,
+        moodScore: _normalizePercentScore(mood),
+        stressScore: _normalizePercentScore(stress),
+        energyScore: _normalizePercentScore(energy),
         note: Value(note),
       ),
     );
   }
+
+  int _normalizePercentScore(int value) => value.clamp(0, 100);
 
   Future<void> upsertSleepLog({
     required DateTime date,

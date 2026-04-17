@@ -15,9 +15,9 @@ class CheckinPage extends ConsumerStatefulWidget {
 }
 
 class _CheckinPageState extends ConsumerState<CheckinPage> {
-  double _mood = 3;
-  double _stress = 2;
-  double _energy = 3;
+  double _mood = 50;
+  double _stress = 50;
+  double _energy = 50;
   final TextEditingController _noteController = TextEditingController();
   bool _saving = false;
 
@@ -30,9 +30,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
   Future<void> _save() async {
     if (_saving) return;
     if (_noteController.text.length > 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('補充文字請控制在 200 字內')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('補充文字請控制在 200 字內')));
       return;
     }
     setState(() => _saving = true);
@@ -100,7 +100,8 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             value: _mood,
             icon: Icons.sentiment_satisfied_alt_rounded,
             color: const Color(0xFF667EEA),
-            labels: const ['很差', '不好', '普通', '不錯', '很好'],
+            minAssistiveLabel: '很差',
+            maxAssistiveLabel: '很好',
             onChanged: (v) => setState(() => _mood = v),
           ),
           const SizedBox(height: 16),
@@ -109,7 +110,6 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             value: _stress,
             icon: Icons.flash_on_rounded,
             color: const Color(0xFFF5576C),
-            labels: const ['極低', '偏低', '中等', '偏高', '極高'],
             onChanged: (v) => setState(() => _stress = v),
           ),
           const SizedBox(height: 16),
@@ -118,7 +118,6 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             value: _energy,
             icon: Icons.bolt_rounded,
             color: const Color(0xFF43E97B),
-            labels: const ['耗盡', '疲倦', '普通', '充沛', '滿分'],
             onChanged: (v) => setState(() => _energy = v),
           ),
           const SizedBox(height: 24),
@@ -189,10 +188,12 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
     required double value,
     required IconData icon,
     required Color color,
-    required List<String> labels,
+    String? minAssistiveLabel,
+    String? maxAssistiveLabel,
     required ValueChanged<double> onChanged,
   }) {
-    final idx = value.round().clamp(0, labels.length - 1);
+    final percent = value.round().clamp(0, 100);
+    final moodLabel = title == '心情' ? _moodDescriptor(percent) : null;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -220,23 +221,39 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                 ),
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  labels[idx],
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$percent%',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                ),
+                  if (moodLabel != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      moodLabel,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: PsyGuardTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -250,33 +267,66 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
               trackHeight: 6,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
             ),
-            child: Slider(
-              value: value,
-              min: 0,
-              max: (labels.length - 1).toDouble(),
-              divisions: labels.length - 1,
-              onChanged: onChanged,
-            ),
+            child: Slider(value: value, min: 0, max: 100, onChanged: onChanged),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: labels
-                  .map(
-                    (l) => Text(
-                      l,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: PsyGuardTheme.textLight,
-                      ),
-                    ),
-                  )
-                  .toList(),
+              children: [
+                _buildEndpointLabel(
+                  score: '0%',
+                  assistiveLabel: minAssistiveLabel,
+                  alignEnd: false,
+                ),
+                _buildEndpointLabel(
+                  score: '100%',
+                  assistiveLabel: maxAssistiveLabel,
+                  alignEnd: true,
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildEndpointLabel({
+    required String score,
+    String? assistiveLabel,
+    required bool alignEnd,
+  }) {
+    return Column(
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        Text(
+          score,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: PsyGuardTheme.textSecondary,
+          ),
+        ),
+        if (assistiveLabel != null)
+          Text(
+            assistiveLabel,
+            style: const TextStyle(
+              fontSize: 10,
+              color: PsyGuardTheme.textLight,
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _moodDescriptor(int value) {
+    if (value <= 20) return '很差';
+    if (value <= 40) return '不好';
+    if (value <= 60) return '普通';
+    if (value <= 80) return '不錯';
+    return '很好';
   }
 }

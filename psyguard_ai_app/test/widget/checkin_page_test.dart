@@ -17,9 +17,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final textField = find.byType(TextField).last;
+    await tester.scrollUntilVisible(
+      find.text('今日筆記'),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+
+    final textField = find.byType(TextField);
+    expect(textField, findsOneWidget);
     await tester.enterText(textField, 'a' * 201);
-    await tester.drag(find.byType(ListView), const Offset(0, -600));
     await tester.pumpAndSettle();
     await tester.tap(find.text('完成紀錄').first);
     await tester.pump();

@@ -60,7 +60,10 @@ class TrendsPage extends ConsumerWidget {
             onPressed: () => context.push('/ai_history'),
           ),
           IconButton(
-            icon: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6B4C9A)),
+            icon: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Color(0xFF6B4C9A),
+            ),
             tooltip: 'AI 趨勢分析',
             onPressed: () => _showAiAnalysisDialog(context, ref),
           ),
@@ -197,7 +200,7 @@ class TrendsPage extends ConsumerWidget {
                     children: [
                       _chartCard(
                         context,
-                        title: '心情分數',
+                        title: '心情百分比',
                         icon: Icons.sentiment_satisfied_alt_rounded,
                         color: const Color(0xFF667EEA),
                         spots: _toSpots(
@@ -206,7 +209,8 @@ class TrendsPage extends ConsumerWidget {
                               .toList(),
                         ),
                         minY: 0,
-                        maxY: 4,
+                        maxY: 100,
+                        formatYLabel: _formatPercentAxis,
                       ),
                       const SizedBox(height: 16),
                       _chartCard(
@@ -266,6 +270,7 @@ class TrendsPage extends ConsumerWidget {
     required List<FlSpot> spots,
     required double minY,
     required double maxY,
+    String Function(double value)? formatYLabel,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -325,7 +330,7 @@ class TrendsPage extends ConsumerWidget {
                       showTitles: true,
                       reservedSize: 30,
                       getTitlesWidget: (value, meta) => Text(
-                        value.toInt().toString(),
+                        (formatYLabel ?? _formatDefaultAxis)(value),
                         style: TextStyle(
                           fontSize: 11,
                           color: PsyGuardTheme.textLight,
@@ -375,6 +380,10 @@ class TrendsPage extends ConsumerWidget {
         .map((entry) => FlSpot(entry.key.toDouble(), entry.value))
         .toList();
   }
+
+  String _formatDefaultAxis(double value) => value.toInt().toString();
+
+  String _formatPercentAxis(double value) => '${value.toInt()}%';
 
   Future<void> _showAiAnalysisDialog(
     BuildContext context,
@@ -431,7 +440,7 @@ class TrendsPage extends ConsumerWidget {
 
       // 2. Format Data for AI
       final moodSummary = checkins
-          .map((e) => '${e.date.toString().substring(0, 10)}:心情${e.moodScore}')
+          .map((e) => '${e.date.toString().substring(0, 10)}:心情${e.moodScore}%')
           .join('\n');
       final sleepSummary = sleepLogs
           .map(

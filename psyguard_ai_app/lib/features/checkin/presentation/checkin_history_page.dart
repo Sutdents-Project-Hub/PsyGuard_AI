@@ -134,9 +134,9 @@ class CheckinHistoryPage extends ConsumerWidget {
 
   Widget _buildScoreBadge(String label, int score) {
     Color color;
-    if (score >= 4) {
+    if (score >= 70) {
       color = PsyGuardTheme.success;
-    } else if (score >= 3) {
+    } else if (score >= 40) {
       color = PsyGuardTheme.textSecondary;
     } else {
       color = PsyGuardTheme.error;
@@ -149,7 +149,7 @@ class CheckinHistoryPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        '$label: $score',
+        '$label: $score%',
         style: GoogleFonts.nunitoSans(
           color: color,
           fontWeight: FontWeight.bold,
@@ -161,7 +161,7 @@ class CheckinHistoryPage extends ConsumerWidget {
 
   Widget _buildSmallBadge(String label, int score) {
     return Text(
-      '$label: $score',
+      '$label: $score%',
       style: GoogleFonts.nunitoSans(
         color: PsyGuardTheme.textSecondary,
         fontSize: 12,
