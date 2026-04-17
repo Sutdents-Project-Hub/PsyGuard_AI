@@ -66,7 +66,7 @@ void main() {
       await db.insertChatMessage(
         sessionId: 's1',
         role: 'user',
-        content: '我前幾天跟家人吵架，現在還是很難受',
+        content: '我前幾天跟家人吵架，現在真的快撐不下去',
       );
       await db.insertChatMessage(
         sessionId: 's1',
@@ -76,7 +76,7 @@ void main() {
 
       final reply = await repo.sendMessage(
         sessionId: 's1',
-        userText: '我今天想到那件事還是胸口很悶',
+        userText: '我今天想到那件事還是好痛苦，胸口很悶',
         contextSummary: '風險:low，原因:家庭壓力',
       );
 
@@ -87,6 +87,10 @@ void main() {
       final request = client.requests.single;
       expect(request.first['role'], 'system');
       expect(request.first['content'], contains('心理輔導師風格'));
+      expect(
+        request.first['content'],
+        contains('你必須根據使用者最近的對話內容，自行判斷當下更需要哪一種回應方式'),
+      );
       expect(
         request.any(
           (message) =>
@@ -99,11 +103,45 @@ void main() {
         request.any(
           (message) =>
               message['role'] == 'user' &&
-              message['content'] == '我今天想到那件事還是胸口很悶',
+              message['content'] == '我今天想到那件事還是好痛苦，胸口很悶',
         ),
         isTrue,
       );
     });
+
+    test(
+      'lets model decide when to comfort first or provide suggestions',
+      () async {
+        final client = FakeAiApiClient(['可以，我們一起整理下一步。']);
+        final repo = AiChatRepositoryImpl(
+          client: client,
+          db: db,
+          config: AppConfig(
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            model: 'mock-model',
+            appEnv: 'test',
+          ),
+        );
+
+        await createSession('s-stable');
+        await db.insertChatMessage(
+          sessionId: 's-stable',
+          role: 'user',
+          content: '我今天其實還好，想整理接下來可以怎麼做',
+        );
+
+        await repo.sendMessage(
+          sessionId: 's-stable',
+          userText: '你可以給我建議，幫我分析怎麼調整作息嗎？',
+        );
+
+        final request = client.requests.single;
+        expect(request, hasLength(greaterThanOrEqualTo(2)));
+        expect(request.first['content'], contains('如果對方情緒極端、明顯低落'));
+        expect(request.first['content'], contains('如果對方狀態較緩和、已有餘裕整理問題'));
+      },
+    );
 
     test('compresses old context and persists summary near 128k', () async {
       final client = FakeAiApiClient(['長期摘要', '這是新的回應']);
