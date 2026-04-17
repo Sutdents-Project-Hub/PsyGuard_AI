@@ -15,6 +15,17 @@ class MockAiClient implements AiApiClient {
     required List<Map<String, String>> messages,
     required String model,
   }) async {
+    final systemText = messages
+        .where((m) => m['role'] == 'system')
+        .map((m) => m['content'] ?? '')
+        .join('\n');
+    if (systemText.contains('心理陪伴對話摘要整理器')) {
+      return '1. 使用者長期承受壓力，會提到焦慮、委屈或疲憊。\n'
+          '2. 觸發因素多半與課業、人際或家庭期待有關。\n'
+          '3. 可用資源包含信任的大人、朋友與校方輔導老師。\n'
+          '4. AI 曾引導其辨識情緒、呼吸放鬆與拆解下一步。';
+    }
+
     final lastUser = messages.reversed.firstWhere(
       (m) => m['role'] == 'user',
       orElse: () => const {'content': ''},

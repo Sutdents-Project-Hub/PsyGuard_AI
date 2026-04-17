@@ -668,6 +668,346 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
   }
 }
 
+class $ChatContextSummariesTable extends ChatContextSummaries
+    with TableInfo<$ChatContextSummariesTable, ChatContextSummary> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChatContextSummariesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES chat_sessions (id)',
+    ),
+  );
+  static const VerificationMeta _summaryMeta = const VerificationMeta(
+    'summary',
+  );
+  @override
+  late final GeneratedColumn<String> summary = GeneratedColumn<String>(
+    'summary',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _summarizedUntilMessageIdMeta =
+      const VerificationMeta('summarizedUntilMessageId');
+  @override
+  late final GeneratedColumn<int> summarizedUntilMessageId =
+      GeneratedColumn<int>(
+        'summarized_until_message_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    sessionId,
+    summary,
+    summarizedUntilMessageId,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'chat_context_summaries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChatContextSummary> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('summary')) {
+      context.handle(
+        _summaryMeta,
+        summary.isAcceptableOrUnknown(data['summary']!, _summaryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_summaryMeta);
+    }
+    if (data.containsKey('summarized_until_message_id')) {
+      context.handle(
+        _summarizedUntilMessageIdMeta,
+        summarizedUntilMessageId.isAcceptableOrUnknown(
+          data['summarized_until_message_id']!,
+          _summarizedUntilMessageIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_summarizedUntilMessageIdMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {sessionId};
+  @override
+  ChatContextSummary map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChatContextSummary(
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      summary: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}summary'],
+      )!,
+      summarizedUntilMessageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}summarized_until_message_id'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ChatContextSummariesTable createAlias(String alias) {
+    return $ChatContextSummariesTable(attachedDatabase, alias);
+  }
+}
+
+class ChatContextSummary extends DataClass
+    implements Insertable<ChatContextSummary> {
+  final String sessionId;
+  final String summary;
+  final int summarizedUntilMessageId;
+  final DateTime updatedAt;
+  const ChatContextSummary({
+    required this.sessionId,
+    required this.summary,
+    required this.summarizedUntilMessageId,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['session_id'] = Variable<String>(sessionId);
+    map['summary'] = Variable<String>(summary);
+    map['summarized_until_message_id'] = Variable<int>(
+      summarizedUntilMessageId,
+    );
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ChatContextSummariesCompanion toCompanion(bool nullToAbsent) {
+    return ChatContextSummariesCompanion(
+      sessionId: Value(sessionId),
+      summary: Value(summary),
+      summarizedUntilMessageId: Value(summarizedUntilMessageId),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ChatContextSummary.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChatContextSummary(
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      summary: serializer.fromJson<String>(json['summary']),
+      summarizedUntilMessageId: serializer.fromJson<int>(
+        json['summarizedUntilMessageId'],
+      ),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'sessionId': serializer.toJson<String>(sessionId),
+      'summary': serializer.toJson<String>(summary),
+      'summarizedUntilMessageId': serializer.toJson<int>(
+        summarizedUntilMessageId,
+      ),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ChatContextSummary copyWith({
+    String? sessionId,
+    String? summary,
+    int? summarizedUntilMessageId,
+    DateTime? updatedAt,
+  }) => ChatContextSummary(
+    sessionId: sessionId ?? this.sessionId,
+    summary: summary ?? this.summary,
+    summarizedUntilMessageId:
+        summarizedUntilMessageId ?? this.summarizedUntilMessageId,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ChatContextSummary copyWithCompanion(ChatContextSummariesCompanion data) {
+    return ChatContextSummary(
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      summary: data.summary.present ? data.summary.value : this.summary,
+      summarizedUntilMessageId: data.summarizedUntilMessageId.present
+          ? data.summarizedUntilMessageId.value
+          : this.summarizedUntilMessageId,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChatContextSummary(')
+          ..write('sessionId: $sessionId, ')
+          ..write('summary: $summary, ')
+          ..write('summarizedUntilMessageId: $summarizedUntilMessageId, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(sessionId, summary, summarizedUntilMessageId, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChatContextSummary &&
+          other.sessionId == this.sessionId &&
+          other.summary == this.summary &&
+          other.summarizedUntilMessageId == this.summarizedUntilMessageId &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ChatContextSummariesCompanion
+    extends UpdateCompanion<ChatContextSummary> {
+  final Value<String> sessionId;
+  final Value<String> summary;
+  final Value<int> summarizedUntilMessageId;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ChatContextSummariesCompanion({
+    this.sessionId = const Value.absent(),
+    this.summary = const Value.absent(),
+    this.summarizedUntilMessageId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ChatContextSummariesCompanion.insert({
+    required String sessionId,
+    required String summary,
+    required int summarizedUntilMessageId,
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : sessionId = Value(sessionId),
+       summary = Value(summary),
+       summarizedUntilMessageId = Value(summarizedUntilMessageId);
+  static Insertable<ChatContextSummary> custom({
+    Expression<String>? sessionId,
+    Expression<String>? summary,
+    Expression<int>? summarizedUntilMessageId,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (sessionId != null) 'session_id': sessionId,
+      if (summary != null) 'summary': summary,
+      if (summarizedUntilMessageId != null)
+        'summarized_until_message_id': summarizedUntilMessageId,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ChatContextSummariesCompanion copyWith({
+    Value<String>? sessionId,
+    Value<String>? summary,
+    Value<int>? summarizedUntilMessageId,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ChatContextSummariesCompanion(
+      sessionId: sessionId ?? this.sessionId,
+      summary: summary ?? this.summary,
+      summarizedUntilMessageId:
+          summarizedUntilMessageId ?? this.summarizedUntilMessageId,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (summary.present) {
+      map['summary'] = Variable<String>(summary.value);
+    }
+    if (summarizedUntilMessageId.present) {
+      map['summarized_until_message_id'] = Variable<int>(
+        summarizedUntilMessageId.value,
+      );
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChatContextSummariesCompanion(')
+          ..write('sessionId: $sessionId, ')
+          ..write('summary: $summary, ')
+          ..write('summarizedUntilMessageId: $summarizedUntilMessageId, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DailyCheckinsTable extends DailyCheckins
     with TableInfo<$DailyCheckinsTable, DailyCheckin> {
   @override
@@ -2689,6 +3029,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $ChatSessionsTable chatSessions = $ChatSessionsTable(this);
   late final $ChatMessagesTable chatMessages = $ChatMessagesTable(this);
+  late final $ChatContextSummariesTable chatContextSummaries =
+      $ChatContextSummariesTable(this);
   late final $DailyCheckinsTable dailyCheckins = $DailyCheckinsTable(this);
   late final $SleepLogsTable sleepLogs = $SleepLogsTable(this);
   late final $RiskSnapshotsTable riskSnapshots = $RiskSnapshotsTable(this);
@@ -2702,6 +3044,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     chatSessions,
     chatMessages,
+    chatContextSummaries,
     dailyCheckins,
     sleepLogs,
     riskSnapshots,
@@ -2750,6 +3093,34 @@ final class $$ChatSessionsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $ChatContextSummariesTable,
+    List<ChatContextSummary>
+  >
+  _chatContextSummariesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.chatContextSummaries,
+        aliasName: $_aliasNameGenerator(
+          db.chatSessions.id,
+          db.chatContextSummaries.sessionId,
+        ),
+      );
+
+  $$ChatContextSummariesTableProcessedTableManager
+  get chatContextSummariesRefs {
+    final manager = $$ChatContextSummariesTableTableManager(
+      $_db,
+      $_db.chatContextSummaries,
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _chatContextSummariesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ChatSessionsTableFilterComposer
@@ -2792,6 +3163,31 @@ class $$ChatSessionsTableFilterComposer
           }) => $$ChatMessagesTableFilterComposer(
             $db: $db,
             $table: $db.chatMessages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> chatContextSummariesRefs(
+    Expression<bool> Function($$ChatContextSummariesTableFilterComposer f) f,
+  ) {
+    final $$ChatContextSummariesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.chatContextSummaries,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatContextSummariesTableFilterComposer(
+            $db: $db,
+            $table: $db.chatContextSummaries,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2871,6 +3267,32 @@ class $$ChatSessionsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> chatContextSummariesRefs<T extends Object>(
+    Expression<T> Function($$ChatContextSummariesTableAnnotationComposer a) f,
+  ) {
+    final $$ChatContextSummariesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.chatContextSummaries,
+          getReferencedColumn: (t) => t.sessionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ChatContextSummariesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.chatContextSummaries,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ChatSessionsTableTableManager
@@ -2886,7 +3308,10 @@ class $$ChatSessionsTableTableManager
           $$ChatSessionsTableUpdateCompanionBuilder,
           (ChatSession, $$ChatSessionsTableReferences),
           ChatSession,
-          PrefetchHooks Function({bool chatMessagesRefs})
+          PrefetchHooks Function({
+            bool chatMessagesRefs,
+            bool chatContextSummariesRefs,
+          })
         > {
   $$ChatSessionsTableTableManager(_$AppDatabase db, $ChatSessionsTable table)
     : super(
@@ -2931,36 +3356,63 @@ class $$ChatSessionsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({chatMessagesRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (chatMessagesRefs) db.chatMessages],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (chatMessagesRefs)
-                    await $_getPrefetchedData<
-                      ChatSession,
-                      $ChatSessionsTable,
-                      ChatMessage
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ChatSessionsTableReferences
-                          ._chatMessagesRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$ChatSessionsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).chatMessagesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.sessionId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({chatMessagesRefs = false, chatContextSummariesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (chatMessagesRefs) db.chatMessages,
+                    if (chatContextSummariesRefs) db.chatContextSummaries,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (chatMessagesRefs)
+                        await $_getPrefetchedData<
+                          ChatSession,
+                          $ChatSessionsTable,
+                          ChatMessage
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChatSessionsTableReferences
+                              ._chatMessagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChatSessionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).chatMessagesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sessionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (chatContextSummariesRefs)
+                        await $_getPrefetchedData<
+                          ChatSession,
+                          $ChatSessionsTable,
+                          ChatContextSummary
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChatSessionsTableReferences
+                              ._chatContextSummariesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChatSessionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).chatContextSummariesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sessionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -2977,7 +3429,10 @@ typedef $$ChatSessionsTableProcessedTableManager =
       $$ChatSessionsTableUpdateCompanionBuilder,
       (ChatSession, $$ChatSessionsTableReferences),
       ChatSession,
-      PrefetchHooks Function({bool chatMessagesRefs})
+      PrefetchHooks Function({
+        bool chatMessagesRefs,
+        bool chatContextSummariesRefs,
+      })
     >;
 typedef $$ChatMessagesTableCreateCompanionBuilder =
     ChatMessagesCompanion Function({
@@ -3309,6 +3764,330 @@ typedef $$ChatMessagesTableProcessedTableManager =
       $$ChatMessagesTableUpdateCompanionBuilder,
       (ChatMessage, $$ChatMessagesTableReferences),
       ChatMessage,
+      PrefetchHooks Function({bool sessionId})
+    >;
+typedef $$ChatContextSummariesTableCreateCompanionBuilder =
+    ChatContextSummariesCompanion Function({
+      required String sessionId,
+      required String summary,
+      required int summarizedUntilMessageId,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ChatContextSummariesTableUpdateCompanionBuilder =
+    ChatContextSummariesCompanion Function({
+      Value<String> sessionId,
+      Value<String> summary,
+      Value<int> summarizedUntilMessageId,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$ChatContextSummariesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ChatContextSummariesTable,
+          ChatContextSummary
+        > {
+  $$ChatContextSummariesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ChatSessionsTable _sessionIdTable(_$AppDatabase db) =>
+      db.chatSessions.createAlias(
+        $_aliasNameGenerator(
+          db.chatContextSummaries.sessionId,
+          db.chatSessions.id,
+        ),
+      );
+
+  $$ChatSessionsTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
+
+    final manager = $$ChatSessionsTableTableManager(
+      $_db,
+      $_db.chatSessions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ChatContextSummariesTableFilterComposer
+    extends Composer<_$AppDatabase, $ChatContextSummariesTable> {
+  $$ChatContextSummariesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get summary => $composableBuilder(
+    column: $table.summary,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get summarizedUntilMessageId => $composableBuilder(
+    column: $table.summarizedUntilMessageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ChatSessionsTableFilterComposer get sessionId {
+    final $$ChatSessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.chatSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatSessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.chatSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChatContextSummariesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChatContextSummariesTable> {
+  $$ChatContextSummariesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get summary => $composableBuilder(
+    column: $table.summary,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get summarizedUntilMessageId => $composableBuilder(
+    column: $table.summarizedUntilMessageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ChatSessionsTableOrderingComposer get sessionId {
+    final $$ChatSessionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.chatSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatSessionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.chatSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChatContextSummariesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChatContextSummariesTable> {
+  $$ChatContextSummariesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get summary =>
+      $composableBuilder(column: $table.summary, builder: (column) => column);
+
+  GeneratedColumn<int> get summarizedUntilMessageId => $composableBuilder(
+    column: $table.summarizedUntilMessageId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$ChatSessionsTableAnnotationComposer get sessionId {
+    final $$ChatSessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.chatSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChatSessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.chatSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChatContextSummariesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChatContextSummariesTable,
+          ChatContextSummary,
+          $$ChatContextSummariesTableFilterComposer,
+          $$ChatContextSummariesTableOrderingComposer,
+          $$ChatContextSummariesTableAnnotationComposer,
+          $$ChatContextSummariesTableCreateCompanionBuilder,
+          $$ChatContextSummariesTableUpdateCompanionBuilder,
+          (ChatContextSummary, $$ChatContextSummariesTableReferences),
+          ChatContextSummary,
+          PrefetchHooks Function({bool sessionId})
+        > {
+  $$ChatContextSummariesTableTableManager(
+    _$AppDatabase db,
+    $ChatContextSummariesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChatContextSummariesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChatContextSummariesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ChatContextSummariesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> sessionId = const Value.absent(),
+                Value<String> summary = const Value.absent(),
+                Value<int> summarizedUntilMessageId = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ChatContextSummariesCompanion(
+                sessionId: sessionId,
+                summary: summary,
+                summarizedUntilMessageId: summarizedUntilMessageId,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String sessionId,
+                required String summary,
+                required int summarizedUntilMessageId,
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ChatContextSummariesCompanion.insert(
+                sessionId: sessionId,
+                summary: summary,
+                summarizedUntilMessageId: summarizedUntilMessageId,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ChatContextSummariesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({sessionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (sessionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.sessionId,
+                                referencedTable:
+                                    $$ChatContextSummariesTableReferences
+                                        ._sessionIdTable(db),
+                                referencedColumn:
+                                    $$ChatContextSummariesTableReferences
+                                        ._sessionIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ChatContextSummariesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChatContextSummariesTable,
+      ChatContextSummary,
+      $$ChatContextSummariesTableFilterComposer,
+      $$ChatContextSummariesTableOrderingComposer,
+      $$ChatContextSummariesTableAnnotationComposer,
+      $$ChatContextSummariesTableCreateCompanionBuilder,
+      $$ChatContextSummariesTableUpdateCompanionBuilder,
+      (ChatContextSummary, $$ChatContextSummariesTableReferences),
+      ChatContextSummary,
       PrefetchHooks Function({bool sessionId})
     >;
 typedef $$DailyCheckinsTableCreateCompanionBuilder =
@@ -4435,6 +5214,8 @@ class $AppDatabaseManager {
       $$ChatSessionsTableTableManager(_db, _db.chatSessions);
   $$ChatMessagesTableTableManager get chatMessages =>
       $$ChatMessagesTableTableManager(_db, _db.chatMessages);
+  $$ChatContextSummariesTableTableManager get chatContextSummaries =>
+      $$ChatContextSummariesTableTableManager(_db, _db.chatContextSummaries);
   $$DailyCheckinsTableTableManager get dailyCheckins =>
       $$DailyCheckinsTableTableManager(_db, _db.dailyCheckins);
   $$SleepLogsTableTableManager get sleepLogs =>

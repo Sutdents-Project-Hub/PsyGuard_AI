@@ -25,6 +25,16 @@ class ChatMessages extends Table {
   TextColumn get riskTag => text().nullable()();
 }
 
+class ChatContextSummaries extends Table {
+  TextColumn get sessionId => text().references(ChatSessions, #id)();
+  TextColumn get summary => text()();
+  IntColumn get summarizedUntilMessageId => integer()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {sessionId};
+}
+
 class DailyCheckins extends Table {
   DateTimeColumn get date => dateTime()();
   IntColumn get moodScore => integer()();
@@ -83,6 +93,7 @@ class AiReports extends Table {
   tables: [
     ChatSessions,
     ChatMessages,
+    ChatContextSummaries,
     DailyCheckins,
     SleepLogs,
     RiskSnapshots,
@@ -104,7 +115,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2; // Bump version to 2 for migration
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -115,6 +126,9 @@ class AppDatabase extends _$AppDatabase {
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
           await m.createTable(aiReports);
+        }
+        if (from < 3) {
+          await m.createTable(chatContextSummaries);
         }
       },
     );
@@ -127,6 +141,7 @@ class AppDatabase extends _$AppDatabase {
     await transaction(() async {
       await batch((b) {
         b.deleteAll(chatMessages);
+        b.deleteAll(chatContextSummaries);
         b.deleteAll(chatSessions);
         b.deleteAll(dailyCheckins);
         b.deleteAll(sleepLogs);
@@ -178,6 +193,13 @@ class AppDatabase extends _$AppDatabase {
         .watch();
   }
 
+  Future<List<ChatMessage>> getSessionMessages(String sessionId) {
+    return (select(chatMessages)
+          ..where((tbl) => tbl.sessionId.equals(sessionId))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+
   Future<void> insertChatMessage({
     required String sessionId,
     required String role,
@@ -197,6 +219,27 @@ class AppDatabase extends _$AppDatabase {
   Future<void> updateSessionRisk(String sessionId, String riskLevel) {
     return (update(chatSessions)..where((t) => t.id.equals(sessionId))).write(
       ChatSessionsCompanion(lastRiskLevel: Value(riskLevel)),
+    );
+  }
+
+  Future<ChatContextSummary?> getChatContextSummary(String sessionId) {
+    return (select(
+      chatContextSummaries,
+    )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();
+  }
+
+  Future<void> upsertChatContextSummary({
+    required String sessionId,
+    required String summary,
+    required int summarizedUntilMessageId,
+  }) async {
+    await into(chatContextSummaries).insertOnConflictUpdate(
+      ChatContextSummariesCompanion.insert(
+        sessionId: sessionId,
+        summary: summary,
+        summarizedUntilMessageId: summarizedUntilMessageId,
+        updatedAt: Value(DateTime.now()),
+      ),
     );
   }
 

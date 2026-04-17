@@ -1,76 +1,96 @@
-# PsyGuard AI
+# 專案名稱
 
-PsyGuard AI 是一款由人工智慧驅動的心理健康支援與陪伴工具，旨在為使用者提供一個安全且具同理心的平台。此 MVP 應用程式使用 Flutter 打造，運用人工智慧提供引導式協助、追蹤情緒趨勢，並作為日常心理健康的可靠夥伴。
+PsyGuard AI
 
-## 核心功能
+## 專案簡介
 
-- **AI 陪伴：** 與對話式 AI 互動，獲得情感支持與引導。
-- **語音互動：** 透過語音轉文字 (Speech-to-Text) 與文字轉語音 (Text-to-Speech) 功能，支援自然的溝通體驗。
-- **趨勢追蹤：** 利用互動式圖表，讓隨時間變化的情緒狀態視覺化。
-- **安全的本機儲存：** 採用加密的本機內容與資料庫，確保使用者資料隱私。
-- **流暢的導覽：** 透過穩健的路由架構，帶來無縫的使用者體驗。
+PsyGuard AI 是一個以 Flutter 製作的心理健康陪伴應用程式 MVP，提供 AI 陪伴對話、每日覺察、睡眠紀錄、風險觀察與趨勢分析。現階段專案主體位於 `psyguard_ai_app`，採本地資料庫保存使用者資料，AI 對話則透過 OpenAI 相容 API 呼叫模型。
 
-## 技術堆疊
+## 功能列表
 
-本應用程式採用 Flutter 框架建置，並結合以下核心套件：
+- `AI 陪伴`：以心理輔導師風格進行對話，會帶入先前對話脈絡。
+- `上下文記憶`：聊天會讀取歷史訊息，必要時把舊內容壓縮成摘要後再續聊。
+- `高風險保護`：偵測高風險語句時優先導向安全流程與真人求助資源。
+- `每日覺察`：記錄心情、壓力、能量與備註。
+- `睡眠紀錄`：記錄睡眠時長、入睡時間與睡眠困難程度。
+- `趨勢分析`：以圖表與 AI 報告呈現近期身心變化。
+- `本地儲存`：聊天、紀錄與風險快照保存在本地 SQLite。
 
-- **框架：** Flutter (Dart)
-- **狀態管理：** Riverpod (flutter_riverpod)
-- **路由管理：** Go Router (go_router)
-- **本機資料庫：** Drift (drift) 與 SQLite
-- **網路請求：** Dio (dio)
-- **資料視覺化：** FL Chart (fl_chart)
-- **語音 API：** speech_to_text 與 flutter_tts
-- **Markdown 渲染：** flutter_markdown
+## 技術架構
+
+- `Frontend`：Flutter
+- `狀態管理`：Riverpod
+- `路由`：GoRouter
+- `資料庫`：Drift + SQLite
+- `網路層`：Dio
+- `語音功能`：`speech_to_text`、`flutter_tts`
+- `AI 介接`：OpenAI 相容 `chat/completions` API
 
 ## 專案結構
 
-此儲存庫將主要的應用程式放置於 `psyguard_ai_app` 目錄下。關鍵的開發操作皆應在此目錄內執行。
+```text
+.
+├── README.md
+├── LICENSE
+└── psyguard_ai_app
+    ├── README.md
+    ├── lib
+    ├── test
+    ├── integration_test
+    └── pubspec.yaml
+```
 
-## 開始使用
+## 本地測試教學
 
-請依照以下步驟在本地端進行專案環境設定。
-
-### 系統需求
-
-- Flutter SDK (需兼容 ^3.9.2 版本限制)
-- Xcode (用於 iOS 開發與測試)
-- Android Studio (用於 Android 開發與測試)
-- CocoaPods (用於 iOS 套件相依性管理)
-
-### 安裝步驟
-
-1. 進入應用程式目錄：
+1. 進入 App 目錄：
    ```bash
    cd psyguard_ai_app
    ```
-
-2. 安裝 Dart 依賴套件：
+2. 安裝依賴：
    ```bash
    flutter pub get
    ```
-
-3. 設定環境變數：
-   - 在 `psyguard_ai_app` 目錄中建立一個 `.env` 檔案。
-   - 參考現有的 `.env.example` 檔案作為範本，填入必要的金鑰（例如 API Token）。
-
-4. 產生程式碼 (如 Drift 資料庫自動生成程式碼等)：
+3. 重新產生 Drift 與測試所需程式碼：
    ```bash
-   dart run build_runner build -d
+   dart run build_runner build --delete-conflicting-outputs
+   ```
+4. 執行靜態檢查：
+   ```bash
+   flutter analyze
+   ```
+5. 執行測試：
+   ```bash
+   flutter test
    ```
 
-5. 安裝 iOS 依賴套件 (如果要在 iOS 環境下執行)：
-   ```bash
-   cd ios
-   pod install
-   cd ..
-   ```
+## 環境變數
 
-6. 執行應用程式：
-   ```bash
-   flutter run
-   ```
+請在 `psyguard_ai_app/.env` 設定以下變數：
 
-## 授權條款
+```env
+API_BASE_URL=https://api.openai.com
+API_KEY=your_api_key
+AI_MODEL=gpt-4o-mini
+APP_ENV=dev
+```
 
-本專案依照 LICENSE 檔案中提供的授權條款進行授權。
+說明：
+
+- `API_BASE_URL`：OpenAI 相容 API 的 base URL
+- `API_KEY`：模型服務 API 金鑰
+- `AI_MODEL`：對話與分析共用的模型名稱
+- `APP_ENV`：執行環境識別，例如 `dev`、`staging`、`prod`
+
+## Coolify 部署教學
+
+目前此儲存庫只有 Flutter 用戶端，沒有可直接部署到 Coolify 的後端服務或容器化設定，因此本專案尚無已驗證的 Coolify 部署流程。若後續拆出獨立 API 或 Web 服務，應補上：
+
+- `Dockerfile` 或可部署映像設定
+- Coolify 服務建立步驟
+- 需要的環境變數
+- 健康檢查與啟動指令
+
+## 前端 / 後端詳細文件連結
+
+- 前端 App 文件：[psyguard_ai_app/README.md](./psyguard_ai_app/README.md)
+- 後端文件：目前沒有獨立後端資料夾

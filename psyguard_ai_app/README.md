@@ -1,95 +1,124 @@
-# 🌿 PsyGuard AI - 全方位心理健康守護者
+# 模組簡介
 
-PsyGuard AI 是一款專為學生設計的心理健康支持應用程式 (MVP)，提供全天候的 AI 陪伴、情緒覺察與身心健康追蹤功能。本應用程式強調隱私保護，所有數據皆儲存於本地端，讓您能安心地探索自我、抒發情緒。
+`psyguard_ai_app` 是 PsyGuard AI 的 Flutter 用戶端，負責 AI 陪伴、每日覺察、睡眠紀錄、風險觀察、趨勢圖表與資料匯出。聊天模組目前具備以下行為：
 
----
+- AI 以心理輔導師風格回應，語言固定為繁體中文。
+- 送出訊息前會讀取同一個聊天 session 的歷史對話。
+- 若估算上下文接近 `128K`，會先把較舊訊息壓縮成摘要並存回本地資料庫，再把摘要與近期原始對話送進模型。
+- 高風險訊息會優先走安全流程，不讓一般對話覆蓋危機處理。
 
-## ✨ 核心功能介紹 (User Guide)
+## 使用技術
 
-### 1. 🤖 AI 陪伴 (AI Companion)
-隨時隨地與具備同理心的 AI 進行對話。
-- **文字對話**：輸入文字，AI 會根據您的情緒提供適當的回應與建議。
-- **語音互動**：支援語音輸入 (需授權麥克風)，讓對話更自然流暢。
-- **安全機制**：若偵測到高風險關鍵字，系統會自動啟動「安全流程」，提供緊急求助資源。
+- `Flutter`
+- `Riverpod`
+- `GoRouter`
+- `Drift`
+- `SQLite`
+- `Dio`
+- `speech_to_text`
+- `flutter_tts`
+- `flutter_markdown`
 
-### 2. 📝 每日覺察 (Daily Check-in)
-每天花 30 秒記錄當下的身心狀態。
-- **情緒 (Mood)**：拖動滑桿紀錄心情好壞。
-- **能量 (Energy)**：紀錄今日的活力指數。
-- **壓力 (Stress)**：評估當下的壓力程度。
-長期記錄有助於發現情緒波動的規律。
+## 資料夾結構
 
-### 3. 🌙 睡眠紀錄 (Sleep Log)
-良好的睡眠是心理健康的基礎。
-- 紀錄每日入睡時間、起床時間與睡眠品質。
-- 系統會自動計算睡眠總時數。
+```text
+psyguard_ai_app
+├── lib
+│   ├── app
+│   ├── core
+│   │   ├── network
+│   │   ├── risk_engine
+│   │   ├── safety
+│   │   └── storage
+│   └── features
+│       ├── chat
+│       ├── checkin
+│       ├── sleep
+│       ├── safety
+│       ├── tools_library
+│       └── trends
+├── test
+├── integration_test
+├── assets
+└── pubspec.yaml
+```
 
-### 4. 📈 身心趨勢 (Trends)
-視覺化您的數據，讓改變看得見。
-- **7/14/30 天圖表**：觀察心情、能量與睡眠的長期趨勢。
-- **風險評估**：系統根據您的紀錄，提供簡單的狀態燈號 (綠色：良好 / 黃色：留意 / 紅色：需關注)。
+## 本地開發流程
 
-### 5. 🧰 心理工具箱 (Tools)
-提供即時的心理自助工具。
-- **自我對話卡**：抽取一張正向引導卡片，轉念思考，找回內心平靜。
-- **呼吸練習** (規劃中)：引導式呼吸放鬆。
+1. 安裝 Flutter 依賴：
+   ```bash
+   flutter pub get
+   ```
+2. 建立 `.env`：
+   ```bash
+   cp .env.example .env
+   ```
+3. 依需求填入 `API_KEY`、`API_BASE_URL`、`AI_MODEL`。
+4. 重新產生 Drift / 測試需要的程式碼：
+   ```bash
+   dart run build_runner build --delete-conflicting-outputs
+   ```
+5. 執行靜態檢查與測試：
+   ```bash
+   flutter analyze
+   flutter test
+   ```
 
-### 6. 🛡️ 安全流程 (Safety Flow)
-當您感到極度痛苦或有風險時，我們接住您。
-- **緊急求助**：一鍵撥打 1925 (安心專線)、1995 (生命線)、110/119。
-- **安撫引導**：提供即時的情緒降溫建議。
+## 環境變數
 
-### 7. 📤 匯出摘要 (Export)
-- 將您的紀錄匯出為 **JSON** 格式或由 AI 生成的 **文字週報**，方便您與心理師或醫師討論病情。
-
----
-
-## 🚀 安裝與執行教學 (Installation)
-
-本專案使用 Google **Flutter** 開發，支援 macOS (Desktop), iOS, Android。
-
-### 1. 環境需求
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) (3.0+)
-- Dart SDK
-- Xcode (若要執行 iOS/macOS 版本)
-
-### 2. 設定專案
-請在專案根目錄建立 `.env` 檔案，並填入以下資訊：
+`.env.example` 目前提供以下變數：
 
 ```env
-API_BASE_URL=https://free.v36.cm
-API_KEY=您的_OPENAI_API_KEY
+API_BASE_URL=https://api.openai.com
+API_KEY=
 AI_MODEL=gpt-4o-mini
 APP_ENV=dev
 ```
 
-### 3. 安裝依賴套件
-在終端機 (Terminal) 執行：
+用途說明：
+
+- `API_BASE_URL`：OpenAI 相容 API 位址
+- `API_KEY`：模型 API 金鑰
+- `AI_MODEL`：聊天與分析使用的模型名稱
+- `APP_ENV`：環境識別
+
+## 建置 / 啟動方式
+
+- 啟動開發版：
+  ```bash
+  flutter run
+  ```
+- 重新產生程式碼：
+  ```bash
+  dart run build_runner build --delete-conflicting-outputs
+  ```
+- 執行單一測試檔：
+  ```bash
+  flutter test test/core/ai_chat_repository_test.dart
+  ```
+
+## 部署細節
+
+目前儲存庫內已驗證的是本地開發與測試流程，尚未提供可直接上 Coolify 的 Flutter Web 或後端部署腳本。若後續要部署，至少需要先確認：
+
+- 目標平台是 `iOS`、`Android`、`macOS` 或 `Web`
+- 若要部署 `Web`，需補上對應 build 指令與靜態檔案發佈流程
+- 若要接雲端 API，需由部署平台安全注入 `.env` 中的模型設定
+
+## 常見問題
+
+### AI 為什麼能記得先前內容？
+
+聊天送出前，系統會從本地資料庫讀取該 session 的歷史訊息。若上下文太長，會把較舊內容整理成摘要後保存，下一次對話會先帶入這份摘要。
+
+### 為什麼高風險訊息沒有直接進一般聊天？
+
+當風險引擎判定為高風險時，系統會優先顯示安全引導與真人求助資源，這比一般陪伴回覆更重要。
+
+### 修改 Drift table 後要做什麼？
+
+請重新執行：
 
 ```bash
-flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build --delete-conflicting-outputs
 ```
-
-### 4. 執行應用程式
-```bash
-flutter run
-```
-
----
-
-## 🔒 隱私與安全聲明
-
-1. **資料隱私**：本應用程式採「本地優先 (Local-First)」架構，您的聊天記錄、情緒數據皆儲存在手機端的 SQLite 資料庫中，不會上傳至任何雲端伺服器（除了發送給 AI 進行對話的當下內容）。
-2. **非醫療診斷**：PsyGuard AI 僅作為自我照護輔助工具，**不能**替代專業醫療診斷或治療。若您有嚴重的心理困擾，請務必尋求專業醫師或心理師協助。
-
----
-
-## 🛠️ 技術架構
-- **Framework**: Flutter (Riverpod + GoRouter)
-- **Database**: Drift (SQLite)
-- **Networking**: Dio
-- **Charts**: fl_chart
-- **Secure Storage**: flutter_secure_storage
-
-Developed with ❤️ for Mental Health Awareness.
