@@ -181,8 +181,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         content: reply.content,
       );
       _scrollToBottom();
+      if (mounted && reply.warningMessage != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(reply.warningMessage!)));
+      }
 
-      final risk = await riskService.evaluateAndPersistToday(sessionId: sessionId);
+      final risk = await riskService.evaluateAndPersistToday(
+        sessionId: sessionId,
+      );
       if (risk.riskLevel == RiskLevel.high && mounted) {
         await _showHighRiskSheet();
       }

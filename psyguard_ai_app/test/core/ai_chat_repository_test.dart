@@ -224,8 +224,38 @@ void main() {
 
       final audits = await db.select(db.auditLogs).get();
       expect(reply.isFallback, isTrue);
+      expect(reply.warningMessage, 'AI 服務暫時異常，請稍後再試');
       expect(audits, isNotEmpty);
       expect(audits.first.eventType, 'ai_fallback');
+    });
+
+    test('returns auth warning when api key is invalid', () async {
+      final invalidTokenError = DioException(
+        requestOptions: RequestOptions(path: '/v1/chat/completions'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/v1/chat/completions'),
+          statusCode: 401,
+        ),
+      );
+
+      final client = FakeAiApiClient([invalidTokenError]);
+      final repo = AiChatRepositoryImpl(
+        client: client,
+        db: db,
+        config: AppConfig(
+          baseUrl: 'https://example.com',
+          apiKey: 'test-key',
+          model: 'mock-model',
+          appEnv: 'test',
+        ),
+      );
+
+      await createSession('s4');
+      final reply = await repo.sendMessage(sessionId: 's4', userText: 'help');
+
+      expect(client.requests, hasLength(1));
+      expect(reply.isFallback, isTrue);
+      expect(reply.warningMessage, 'AI 驗證失敗：API Key 無效、已過期，或不屬於這個服務');
     });
   });
 }

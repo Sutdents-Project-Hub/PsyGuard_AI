@@ -286,6 +286,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         final settings = ref.read(localSettingsServiceProvider);
                         await db.clearAllData();
                         await settings.clearAll();
+                        ref.invalidate(welcomeSeenProvider);
                         ref.invalidate(consentAcceptedProvider);
                         if (context.mounted) {
                           context.go('/welcome');

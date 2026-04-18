@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/storage/database_provider.dart';
 import '../../../core/storage/app_database.dart';
+import '../../../core/widgets/app_brand_icon.dart';
 
 class HomeDashboard {
   HomeDashboard({
@@ -50,10 +51,12 @@ class HomePage extends ConsumerWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.spa_rounded, // Nature icon
-              color: PsyGuardTheme.primary,
-              size: 20,
+            const AppBrandIcon(
+              size: 28,
+              radius: 10,
+              padding: 2,
+              backgroundColor: Color(0xFFF7FAF6),
+              borderColor: Color(0xFFE1E9E2),
             ),
             const SizedBox(width: 8),
             Text(
@@ -329,7 +332,7 @@ class HomePage extends ConsumerWidget {
 
   Widget _buildDrawer(BuildContext context) {
     final items = [
-      ('/home', '首頁', Icons.spa_rounded),
+      ('/home', '首頁', Icons.home_rounded),
       ('/chat', 'AI 陪伴', Icons.chat_bubble_rounded),
       ('/checkin', '筆記紀錄', Icons.edit_note_rounded),
       ('/sleep', '睡眠紀錄', Icons.bedtime_rounded),
@@ -356,7 +359,13 @@ class HomePage extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.spa_rounded, color: PsyGuardTheme.primary, size: 32),
+                const AppBrandIcon(
+                  size: 52,
+                  radius: 16,
+                  padding: 4,
+                  backgroundColor: Color(0xFFF7FAF6),
+                  borderColor: Color(0xFFE2E9E2),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'PsyGuard AI',

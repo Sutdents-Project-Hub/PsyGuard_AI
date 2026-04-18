@@ -16,11 +16,22 @@ class AiReply {
     required this.content,
     required this.isFallback,
     required this.model,
+    this.warningMessage,
   });
 
   final String content;
   final bool isFallback;
   final String model;
+  final String? warningMessage;
+}
+
+class AiRequestException implements Exception {
+  const AiRequestException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }
 
 abstract class AiChatRepository {
@@ -96,6 +107,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
           content: content,
           isFallback: false,
           model: _config.model,
+          warningMessage: null,
         );
       } catch (error) {
         lastError = error;
@@ -122,6 +134,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
       content: _fallbackReply,
       isFallback: true,
       model: _config.model,
+      warningMessage: _userFacingError(lastError),
     );
   }
 
@@ -468,8 +481,48 @@ class AiChatRepositoryImpl implements AiChatRepository {
       );
       return content;
     } catch (error) {
-      rethrow;
+      throw AiRequestException(_userFacingError(error));
     }
+  }
+
+  String _userFacingError(Object? error) {
+    if (error is AiRequestException) {
+      return error.message;
+    }
+
+    if (error is DioException) {
+      final status = error.response?.statusCode;
+      return switch (status) {
+        401 => 'AI 驗證失敗：API Key 無效、已過期，或不屬於這個服務',
+        403 => 'AI 驗證被拒絕：目前 API Key 沒有使用此服務的權限',
+        404 => '找不到 AI API 路徑：請確認 Base URL 可直接對應到 `/v1/chat/completions`',
+        429 => 'AI 服務目前流量過高或額度不足，請稍後再試',
+        int code when code >= 500 => 'AI 服務暫時異常，請稍後再試',
+        _ => _messageForDioType(error),
+      };
+    }
+
+    if (error is StateError) {
+      const prefix = 'Bad state: ';
+      final message = error.toString();
+      if (message.startsWith(prefix)) {
+        return message.substring(prefix.length);
+      }
+      return message;
+    }
+
+    return 'AI 服務目前無法使用，請稍後再試';
+  }
+
+  String _messageForDioType(DioException error) {
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout => '連線 AI 服務逾時，請確認網路與伺服器狀態',
+      DioExceptionType.connectionError ||
+      DioExceptionType.badCertificate => '無法連線到 AI 伺服器，請確認網址與憑證設定',
+      _ => 'AI 服務目前無法使用，請稍後再試',
+    };
   }
 
   String get _systemPrompt =>

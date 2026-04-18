@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final localSettingsServiceProvider = Provider<LocalSettingsService>((ref) {
   return LocalSettingsService(const FlutterSecureStorage());
@@ -7,6 +8,10 @@ final localSettingsServiceProvider = Provider<LocalSettingsService>((ref) {
 
 final consentAcceptedProvider = FutureProvider<bool>((ref) async {
   return ref.read(localSettingsServiceProvider).getConsentAccepted();
+});
+
+final welcomeSeenProvider = FutureProvider<bool>((ref) async {
+  return ref.read(localSettingsServiceProvider).getWelcomeSeen();
 });
 
 class LocalSettingsService {
@@ -21,6 +26,7 @@ class LocalSettingsService {
   static const _consentAcceptedKey = 'consent_accepted';
   static const _consentAcceptedAtKey = 'consent_accepted_at';
   static const _consentVersionKey = 'consent_version';
+  static const _welcomeSeenKey = 'welcome_seen';
 
   Future<void> saveAiSettings({
     required String baseUrl,
@@ -72,8 +78,20 @@ class LocalSettingsService {
     return value == 'true';
   }
 
-  Future<void> clearAll() {
-    return _storage.deleteAll();
+  Future<void> setWelcomeSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_welcomeSeenKey, true);
+  }
+
+  Future<bool> getWelcomeSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_welcomeSeenKey) ?? false;
+  }
+
+  Future<void> clearAll() async {
+    await _storage.deleteAll();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_welcomeSeenKey);
   }
 }
 

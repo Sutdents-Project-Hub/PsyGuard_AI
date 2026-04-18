@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/security/local_settings_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_brand_icon.dart';
 import '../../../l10n/strings_zh_tw.dart';
 
-class WelcomePage extends StatelessWidget {
+class WelcomePage extends ConsumerWidget {
   const WelcomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -20,17 +23,12 @@ class WelcomePage extends StatelessWidget {
             children: [
               const Spacer(flex: 3),
               // Logo / Brand
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: PsyGuardTheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.spa_rounded,
-                  color: PsyGuardTheme.primary,
-                  size: 48,
-                ),
+              const AppBrandIcon(
+                size: 88,
+                radius: 28,
+                padding: 8,
+                backgroundColor: Color(0xFFF6F8F5),
+                borderColor: Color(0xFFE2E9E2),
               ),
               const SizedBox(height: 32),
               Text(
@@ -103,7 +101,18 @@ class WelcomePage extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => context.go('/consent'),
+                  onPressed: () async {
+                    await ref
+                        .read(localSettingsServiceProvider)
+                        .setWelcomeSeen();
+                    ref.invalidate(welcomeSeenProvider);
+                    if (!context.mounted) return;
+                    final hasConsent = await ref.read(
+                      consentAcceptedProvider.future,
+                    );
+                    if (!context.mounted) return;
+                    context.go(hasConsent ? '/home' : '/consent');
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: PsyGuardTheme.primary,
                     foregroundColor: Colors.white,
