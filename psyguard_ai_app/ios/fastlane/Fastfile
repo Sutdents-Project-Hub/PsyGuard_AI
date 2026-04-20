@@ -12,10 +12,16 @@ platform :ios do
       is_key_content_base64: false
     )
 
+    ipa_dir = File.expand_path("../../build/ios/ipa", __dir__)
+    Dir.glob(File.join(ipa_dir, "*.ipa")).each do |old_ipa|
+      File.delete(old_ipa)
+    end
+
     sh("cd .. && flutter build ipa")
 
-    ipa_path = File.expand_path("../../build/ios/ipa/psyguard_ai_app.ipa", __dir__)
-    UI.user_error!("找不到 IPA 檔案：#{ipa_path}") unless File.exist?(ipa_path)
+    ipa_candidates = Dir.glob(File.join(ipa_dir, "*.ipa")).sort_by { |path| File.mtime(path) }
+    ipa_path = ipa_candidates.last
+    UI.user_error!("找不到 IPA 檔案，請確認 flutter build ipa 是否成功輸出到 #{ipa_dir}") unless ipa_path
 
     puts "Using IPA: #{ipa_path}"
 
