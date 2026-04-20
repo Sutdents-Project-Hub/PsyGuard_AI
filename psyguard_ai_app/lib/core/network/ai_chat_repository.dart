@@ -10,6 +10,8 @@ import '../storage/database_provider.dart';
 import 'ai_api_client.dart';
 import 'app_config_controller.dart';
 import 'dio_provider.dart';
+import 'ai_error_formatter.dart';
+import 'ai_local_messages.dart';
 
 class AiReply {
   AiReply({
@@ -23,15 +25,6 @@ class AiReply {
   final bool isFallback;
   final String model;
   final String? warningMessage;
-}
-
-class AiRequestException implements Exception {
-  const AiRequestException(this.message);
-
-  final String message;
-
-  @override
-  String toString() => message;
 }
 
 abstract class AiChatRepository {
@@ -79,9 +72,6 @@ class AiChatRepositoryImpl implements AiChatRepository {
   static const _maxRecentMessagesToKeep = 12;
   static const _minRecentMessagesToKeep = 4;
   static const _maxStoredSummaryChars = 1200;
-
-  static const _fallbackReply =
-      '我現在無法連線到伺服器，但你不是一個人。先跟我做 3 次慢呼吸：吸氣 4 秒、停 2 秒、吐氣 6 秒。若你現在有立即危險，請立刻撥打 110 或 119。';
 
   @override
   Future<AiReply> sendMessage({
@@ -131,10 +121,10 @@ class AiChatRepositoryImpl implements AiChatRepository {
     );
 
     return AiReply(
-      content: _fallbackReply,
+      content: aiFallbackReply,
       isFallback: true,
       model: _config.model,
-      warningMessage: _userFacingError(lastError),
+      warningMessage: userFacingAiError(lastError),
     );
   }
 
@@ -313,6 +303,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
           ),
         )
         .where((message) => message.content.isNotEmpty)
+        .where(_shouldIncludeInPrompt)
         .toList();
 
     if (userText.isEmpty) {
@@ -395,6 +386,13 @@ class AiChatRepositoryImpl implements AiChatRepository {
       default:
         return 'user';
     }
+  }
+
+  bool _shouldIncludeInPrompt(_PromptHistoryMessage message) {
+    if (message.role != 'assistant') {
+      return true;
+    }
+    return !localOnlyAssistantReplies.contains(message.content);
   }
 
   int _estimateMessagesTokens(List<Map<String, String>> messages) {
@@ -481,48 +479,8 @@ class AiChatRepositoryImpl implements AiChatRepository {
       );
       return content;
     } catch (error) {
-      throw AiRequestException(_userFacingError(error));
+      throw AiRequestException(userFacingAiError(error));
     }
-  }
-
-  String _userFacingError(Object? error) {
-    if (error is AiRequestException) {
-      return error.message;
-    }
-
-    if (error is DioException) {
-      final status = error.response?.statusCode;
-      return switch (status) {
-        401 => 'AI 驗證失敗：API Key 無效、已過期，或不屬於這個服務',
-        403 => 'AI 驗證被拒絕：目前 API Key 沒有使用此服務的權限',
-        404 => '找不到 AI API 路徑：請確認 Base URL 可直接對應到 `/v1/chat/completions`',
-        429 => 'AI 服務目前流量過高或額度不足，請稍後再試',
-        int code when code >= 500 => 'AI 服務暫時異常，請稍後再試',
-        _ => _messageForDioType(error),
-      };
-    }
-
-    if (error is StateError) {
-      const prefix = 'Bad state: ';
-      final message = error.toString();
-      if (message.startsWith(prefix)) {
-        return message.substring(prefix.length);
-      }
-      return message;
-    }
-
-    return 'AI 服務目前無法使用，請稍後再試';
-  }
-
-  String _messageForDioType(DioException error) {
-    return switch (error.type) {
-      DioExceptionType.connectionTimeout ||
-      DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout => '連線 AI 服務逾時，請確認網路與伺服器狀態',
-      DioExceptionType.connectionError ||
-      DioExceptionType.badCertificate => '無法連線到 AI 伺服器，請確認網址與憑證設定',
-      _ => 'AI 服務目前無法使用，請稍後再試',
-    };
   }
 
   String get _systemPrompt =>

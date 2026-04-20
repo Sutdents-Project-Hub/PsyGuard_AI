@@ -54,9 +54,30 @@ class _ExportPageState extends ConsumerState<ExportPage> {
           onPressed: () => context.go('/home'),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        child: Column(
+      body: Stack(
+        children: [
+          // 案號浮水印
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Center(
+                child: Transform.rotate(
+                  angle: -0.3,
+                  child: Text(
+                    '案號 115-E018647',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black.withValues(alpha: 0.03),
+                      letterSpacing: 4,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            child: Column(
           children: [
             Container(
               width: double.infinity,
@@ -187,7 +208,9 @@ class _ExportPageState extends ConsumerState<ExportPage> {
               ),
             ),
           ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }

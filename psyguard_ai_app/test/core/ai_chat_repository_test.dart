@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:psyguard_ai_app/core/config/app_config.dart';
 import 'package:psyguard_ai_app/core/network/ai_api_client.dart';
 import 'package:psyguard_ai_app/core/network/ai_chat_repository.dart';
+import 'package:psyguard_ai_app/core/network/ai_local_messages.dart';
 import 'package:psyguard_ai_app/core/storage/app_database.dart';
 
 class FakeAiApiClient implements AiApiClient {
@@ -29,6 +30,9 @@ class FakeAiApiClient implements AiApiClient {
     }
     throw value;
   }
+
+  @override
+  Future<void> validateConnection({required String model}) async {}
 }
 
 void main() {
@@ -257,5 +261,66 @@ void main() {
       expect(reply.isFallback, isTrue);
       expect(reply.warningMessage, 'AI 驗證失敗：API Key 無效、已過期，或不屬於這個服務');
     });
+
+    test('does not resend local fallback reply back to AI service', () async {
+      final client = FakeAiApiClient(['新的正式回應']);
+      final repo = AiChatRepositoryImpl(
+        client: client,
+        db: db,
+        config: AppConfig(
+          baseUrl: 'https://example.com',
+          apiKey: 'test-key',
+          model: 'mock-model',
+          appEnv: 'test',
+        ),
+      );
+
+      await createSession('s5');
+      await db.insertChatMessage(
+        sessionId: 's5',
+        role: 'ai',
+        content: aiFallbackReply,
+      );
+
+      await repo.sendMessage(sessionId: 's5', userText: '我重新設定好了');
+
+      final request = client.requests.single;
+      expect(
+        request.any((message) => message['content'] == aiFallbackReply),
+        isFalse,
+      );
+    });
+
+    test(
+      'does not resend local high-risk safety reply back to AI service',
+      () async {
+        final client = FakeAiApiClient(['新的正式回應']);
+        final repo = AiChatRepositoryImpl(
+          client: client,
+          db: db,
+          config: AppConfig(
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            model: 'mock-model',
+            appEnv: 'test',
+          ),
+        );
+
+        await createSession('s6');
+        await db.insertChatMessage(
+          sessionId: 's6',
+          role: 'ai',
+          content: aiHighRiskSafetyReply,
+        );
+
+        await repo.sendMessage(sessionId: 's6', userText: '我現在安全了，想繼續聊');
+
+        final request = client.requests.single;
+        expect(
+          request.any((message) => message['content'] == aiHighRiskSafetyReply),
+          isFalse,
+        );
+      },
+    );
   });
 }

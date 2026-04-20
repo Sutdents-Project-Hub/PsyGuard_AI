@@ -44,23 +44,19 @@ class AppConfigController extends StateNotifier<AppConfig> {
     required String apiKey,
     required String model,
   }) async {
-    final normalizedBaseUrl = _normalizeBaseUrl(baseUrl);
-    final normalizedModel = model.trim().isEmpty
-        ? _envConfig.model
-        : model.trim();
+    final nextConfig = previewUserConfig(
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      model: model,
+    );
 
     await _settings.saveAiSettings(
-      baseUrl: normalizedBaseUrl,
-      apiKey: apiKey.trim(),
-      model: normalizedModel,
+      baseUrl: nextConfig.baseUrl,
+      apiKey: nextConfig.apiKey,
+      model: nextConfig.model,
     );
 
-    state = _envConfig.copyWith(
-      baseUrl: normalizedBaseUrl,
-      apiKey: apiKey.trim(),
-      model: normalizedModel,
-      isUserProvided: true,
-    );
+    state = nextConfig;
   }
 
   Future<void> clearUserConfig() async {
@@ -74,5 +70,23 @@ class AppConfigController extends StateNotifier<AppConfig> {
       return trimmed.substring(0, trimmed.length - 1);
     }
     return trimmed;
+  }
+
+  AppConfig previewUserConfig({
+    required String baseUrl,
+    required String apiKey,
+    required String model,
+  }) {
+    final normalizedBaseUrl = _normalizeBaseUrl(baseUrl);
+    final normalizedModel = model.trim().isEmpty
+        ? _envConfig.model
+        : model.trim();
+
+    return _envConfig.copyWith(
+      baseUrl: normalizedBaseUrl,
+      apiKey: apiKey.trim(),
+      model: normalizedModel,
+      isUserProvided: true,
+    );
   }
 }

@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_config.dart';
 import 'app_config_controller.dart';
 
-final dioProvider = Provider<Dio>((ref) {
-  final config = ref.watch(appConfigProvider);
+Dio buildDioForAppConfig(AppConfig config) {
   return Dio(
     BaseOptions(
       baseUrl: config.baseUrl,
@@ -13,4 +13,9 @@ final dioProvider = Provider<Dio>((ref) {
       headers: {'Content-Type': 'application/json'},
     ),
   );
+}
+
+final dioProvider = Provider<Dio>((ref) {
+  final config = ref.watch(appConfigProvider);
+  return buildDioForAppConfig(config);
 });

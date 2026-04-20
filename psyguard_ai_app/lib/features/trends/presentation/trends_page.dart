@@ -7,6 +7,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/network/ai_chat_repository.dart';
 import '../../../core/storage/app_database.dart';
 import '../../../core/storage/database_provider.dart';
+import '../../../core/widgets/geometric_stress_indicator.dart';
+import '../../../core/widgets/brand_loading_indicator.dart';
 
 class TrendBundle {
   TrendBundle({
@@ -127,6 +129,12 @@ class TrendsPage extends ConsumerWidget {
             child: data.when(
               data: (bundle) {
                 try {
+                  // 取得最新風險分數用於圖標變色
+                  final latestRiskScore = bundle.risks.isNotEmpty
+                      ? bundle.risks.last.riskScore
+                      : 20;
+                  final riskIconColor = PsyGuardTheme.riskColor(latestRiskScore);
+
                   if (bundle.checkins.isEmpty &&
                       bundle.sleepLogs.isEmpty &&
                       bundle.risks.isEmpty) {
@@ -194,49 +202,77 @@ class TrendsPage extends ConsumerWidget {
                       ),
                     );
                   }
-                  return ListView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                  return Stack(
                     children: [
-                      _chartCard(
-                        context,
-                        title: '心情百分比',
-                        icon: Icons.sentiment_satisfied_alt_rounded,
-                        color: const Color(0xFF667EEA),
-                        spots: _toSpots(
-                          bundle.checkins
-                              .map((e) => e.moodScore.toDouble())
-                              .toList(),
+                      // 案號浮水印
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: Center(
+                            child: Transform.rotate(
+                              angle: -0.3,
+                              child: Text(
+                                '案號 115-E018647',
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  letterSpacing: 4,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        minY: 0,
-                        maxY: 100,
-                        formatYLabel: _formatPercentAxis,
                       ),
-                      const SizedBox(height: 16),
-                      _chartCard(
-                        context,
-                        title: '睡眠時長',
-                        icon: Icons.bedtime_rounded,
-                        color: const Color(0xFFA18CD1),
-                        spots: _toSpots(
-                          bundle.sleepLogs.map((e) => e.sleepHours).toList(),
-                        ),
-                        minY: 0,
-                        maxY: 12,
-                      ),
-                      const SizedBox(height: 16),
-                      _chartCard(
-                        context,
-                        title: '風險分數',
-                        icon: Icons.health_and_safety_rounded,
-                        color: const Color(0xFFF5576C),
-                        spots: _toSpots(
-                          bundle.risks
-                              .map((e) => e.riskScore.toDouble())
-                              .toList(),
-                        ),
-                        minY: 0,
-                        maxY: 100,
+                      ListView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                        children: [
+                          _chartCard(
+                            context,
+                            title: '心情百分比',
+                            icon: Icons.sentiment_satisfied_alt_rounded,
+                            color: const Color(0xFF667EEA),
+                            spots: _toSpots(
+                              bundle.checkins
+                                  .map((e) => e.moodScore.toDouble())
+                                  .toList(),
+                            ),
+                            minY: 0,
+                            maxY: 100,
+                            formatYLabel: _formatPercentAxis,
+                          ),
+                          const SizedBox(height: 16),
+                          _chartCard(
+                            context,
+                            title: '睡眠時長',
+                            icon: Icons.bedtime_rounded,
+                            color: const Color(0xFFA18CD1),
+                            spots: _toSpots(
+                              bundle.sleepLogs.map((e) => e.sleepHours).toList(),
+                            ),
+                            minY: 0,
+                            maxY: 12,
+                          ),
+                          const SizedBox(height: 16),
+                          // 風險分數卡 + 幾何壓力指示器
+                          _chartCard(
+                            context,
+                            title: '風險分數',
+                            icon: Icons.shield_rounded,
+                            color: riskIconColor,
+                            spots: _toSpots(
+                              bundle.risks
+                                  .map((e) => e.riskScore.toDouble())
+                                  .toList(),
+                            ),
+                            minY: 0,
+                            maxY: 100,
+                            trailing: GeometricStressIndicator(
+                              riskScore: latestRiskScore,
+                              size: 32,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   );
@@ -250,7 +286,7 @@ class TrendsPage extends ConsumerWidget {
                 }
               },
               loading: () => const Center(
-                child: CircularProgressIndicator(color: PsyGuardTheme.primary),
+                child: BrandLoadingIndicator(message: '載入趨勢資料...'),
               ),
               error: (error, stack) => Center(
                 child: Text('載入失敗：$error', style: theme.textTheme.bodyMedium),
@@ -271,6 +307,7 @@ class TrendsPage extends ConsumerWidget {
     required double minY,
     required double maxY,
     String Function(double value)? formatYLabel,
+    Widget? trailing,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -297,6 +334,7 @@ class TrendsPage extends ConsumerWidget {
                   color: PsyGuardTheme.textPrimary,
                 ),
               ),
+              if (trailing != null) ...[const Spacer(), trailing],
             ],
           ),
           const SizedBox(height: 20),

@@ -98,7 +98,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           _buildSliderSection(
             title: '心情',
             value: _mood,
-            icon: Icons.sentiment_satisfied_alt_rounded,
+            icon: _moodEmoji(_mood.round()),
             color: const Color(0xFF667EEA),
             minAssistiveLabel: '很差',
             maxAssistiveLabel: '很好',
@@ -108,7 +108,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           _buildSliderSection(
             title: '壓力',
             value: _stress,
-            icon: Icons.flash_on_rounded,
+            icon: _stressEmoji(_stress.round()),
             color: const Color(0xFFF5576C),
             onChanged: (v) => setState(() => _stress = v),
           ),
@@ -116,7 +116,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           _buildSliderSection(
             title: '活力',
             value: _energy,
-            icon: Icons.bolt_rounded,
+            icon: _energyEmoji(_energy.round()),
             color: const Color(0xFF43E97B),
             onChanged: (v) => setState(() => _energy = v),
           ),
@@ -328,5 +328,28 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
     if (value <= 60) return '普通';
     if (value <= 80) return '不錯';
     return '很好';
+  }
+
+  // ── 滑桿表情連動 (Slider Emoji Linkage) ─────────────────────────
+  IconData _moodEmoji(int value) {
+    if (value <= 20) return Icons.sentiment_very_dissatisfied_rounded;
+    if (value <= 40) return Icons.sentiment_dissatisfied_rounded;
+    if (value <= 60) return Icons.sentiment_neutral_rounded;
+    if (value <= 80) return Icons.sentiment_satisfied_rounded;
+    return Icons.sentiment_very_satisfied_rounded;
+  }
+
+  IconData _stressEmoji(int value) {
+    if (value <= 25) return Icons.spa_rounded;
+    if (value <= 50) return Icons.psychology_rounded;
+    if (value <= 75) return Icons.psychology_alt_rounded;
+    return Icons.warning_amber_rounded;
+  }
+
+  IconData _energyEmoji(int value) {
+    if (value <= 25) return Icons.battery_1_bar_rounded;
+    if (value <= 50) return Icons.battery_3_bar_rounded;
+    if (value <= 75) return Icons.battery_5_bar_rounded;
+    return Icons.battery_full_rounded;
   }
 }

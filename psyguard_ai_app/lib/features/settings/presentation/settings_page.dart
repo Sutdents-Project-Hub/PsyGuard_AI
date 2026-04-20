@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/network/ai_api_client.dart';
+import '../../../core/network/ai_error_formatter.dart';
 import '../../../core/network/app_config_controller.dart';
 import '../../../core/security/local_settings_service.dart';
 import '../../../core/storage/database_provider.dart';
@@ -409,11 +411,30 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
     setState(() => _isSaving = true);
     try {
+      final notifier = ref.read(appConfigProvider.notifier);
+      final nextConfig = notifier.previewUserConfig(
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        model: model,
+      );
+
+      await validateOpenAiCompatibleConfig(nextConfig);
       await ref
           .read(appConfigProvider.notifier)
           .saveUserConfig(baseUrl: baseUrl, apiKey: apiKey, model: model);
+      await ref.read(appDatabaseProvider).cleanupLocalOnlyAiArtifacts();
       _hasManualChanges = false;
-      _showMessage('AI 設定已儲存，聊天與分析功能會立即使用新設定');
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).clearSnackBars();
+      _showMessage('AI 設定已儲存，並已通過連線測試；聊天與分析會立即使用新設定');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).clearSnackBars();
+      _showMessage('AI 設定未儲存：${userFacingAiError(error)}');
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);

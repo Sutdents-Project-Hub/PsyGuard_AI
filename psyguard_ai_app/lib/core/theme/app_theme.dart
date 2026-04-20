@@ -125,4 +125,41 @@ class PsyGuardTheme {
     borderRadius: BorderRadius.circular(16),
     border: Border.all(color: const Color(0xFFE2E8F0)),
   );
+
+  // ── Risk Color Mapping ────────────────────────────────────────────
+  static const Color riskLow = Color(0xFF5B8C85); // Sage (Teal/Green)
+  static const Color riskMedium = Color(0xFFE8A838); // Warm Orange
+  static const Color riskHigh = Color(0xFFD14343); // Deep Red
+
+  /// 根據風險分數 (0-100) 回傳對應顏色。
+  /// 0-40 → 藍綠 / 41-70 → 橘 / 71+ → 深紅
+  static Color riskColor(int score) {
+    if (score <= 40) return riskLow;
+    if (score <= 70) return riskMedium;
+    return riskHigh;
+  }
+
+  // ── 負面關鍵字 (用於 Bold Logic) ──────────────────────────────────
+  static const List<String> negativeKeywords = [
+    '累',
+    '痛',
+    '壓力',
+    '焦慮',
+    '害怕',
+    '難過',
+    '絕望',
+    '孤單',
+    '沮喪',
+    '生氣',
+    '崩潰',
+    '撐不住',
+    '不想',
+    '無助',
+    '失眠',
+    '疲憊',
+    '煩',
+    '哭',
+    '受傷',
+    '恐慌',
+  ];
 }

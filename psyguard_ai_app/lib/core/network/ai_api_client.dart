@@ -1,12 +1,15 @@
 import 'package:dio/dio.dart';
 
 import '../config/app_config.dart';
+import 'dio_provider.dart';
 
 abstract class AiApiClient {
   Future<String> createChatCompletion({
     required List<Map<String, String>> messages,
     required String model,
   });
+
+  Future<void> validateConnection({required String model});
 }
 
 class MockAiClient implements AiApiClient {
@@ -69,6 +72,9 @@ class MockAiClient implements AiApiClient {
         '我想先確認一下：當你說「$text」時，你的身體或情緒最明顯的感覺是什麼（例如：胸口緊、想哭、心跳快、麻木）？\n\n'
         '如果你願意，我們可以試著做一個 30 秒的小練習：把情緒命名成一句話（例如「我現在很焦慮/很委屈/很生氣」），然後給自己一句不帶責備的回應（例如「我正在努力，這已經很棒了」）。';
   }
+
+  @override
+  Future<void> validateConnection({required String model}) async {}
 }
 
 class OpenAiCompatibleClient implements AiApiClient {
@@ -82,22 +88,11 @@ class OpenAiCompatibleClient implements AiApiClient {
     required List<Map<String, String>> messages,
     required String model,
   }) async {
-    if (!_config.isConfigured) {
-      throw StateError(
-        'AI 功能暫時無法使用：API 設定未完成。\n'
-        '請在 .env 檔案中設定有效的 API_KEY。',
-      );
-    }
-
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/v1/chat/completions',
-      data: {
-        'model': model,
-        'temperature': 0.6,
-        'max_tokens': 400,
-        'messages': messages,
-      },
-      options: Options(headers: {'Authorization': 'Bearer ${_config.apiKey}'}),
+    final response = await _postChatCompletion(
+      model: model,
+      messages: messages,
+      temperature: 0.6,
+      maxTokens: 400,
     );
 
     final data = response.data;
@@ -118,4 +113,50 @@ class OpenAiCompatibleClient implements AiApiClient {
 
     return content;
   }
+
+  @override
+  Future<void> validateConnection({required String model}) async {
+    final response = await _postChatCompletion(
+      model: model,
+      messages: const [
+        {'role': 'user', 'content': '請只回 ok'},
+      ],
+      temperature: 0,
+      maxTokens: 8,
+    );
+
+    if (response.data == null) {
+      throw StateError('AI 回應為空');
+    }
+  }
+
+  Future<Response<Map<String, dynamic>>> _postChatCompletion({
+    required String model,
+    required List<Map<String, String>> messages,
+    required num temperature,
+    required int maxTokens,
+  }) async {
+    if (!_config.isConfigured) {
+      throw StateError(
+        'AI 功能暫時無法使用：API 設定未完成。\n'
+        '請在 .env 檔案中設定有效的 API_KEY。',
+      );
+    }
+
+    return _dio.post<Map<String, dynamic>>(
+      '/v1/chat/completions',
+      data: {
+        'model': model,
+        'temperature': temperature,
+        'max_tokens': maxTokens,
+        'messages': messages,
+      },
+      options: Options(headers: {'Authorization': 'Bearer ${_config.apiKey}'}),
+    );
+  }
+}
+
+Future<void> validateOpenAiCompatibleConfig(AppConfig config) async {
+  final client = OpenAiCompatibleClient(buildDioForAppConfig(config), config);
+  await client.validateConnection(model: config.model);
 }

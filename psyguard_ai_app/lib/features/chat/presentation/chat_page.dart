@@ -8,6 +8,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/network/ai_chat_repository.dart';
+import '../../../core/network/ai_local_messages.dart';
 import '../../../core/risk_engine/risk_models.dart';
 import '../../../core/risk_engine/risk_provider.dart';
 import '../../../core/storage/app_database.dart';
@@ -143,15 +144,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         sessionId: sessionId,
       );
       if (immediateRisk.riskLevel == RiskLevel.high) {
-        const safetyFirst =
-            '我聽見你現在非常痛、也很危險。你不需要一個人撐著。\n\n'
-            '請你先做 3 次慢呼吸：吸氣 4 秒、停 2 秒、吐氣 6 秒。\n'
-            '如果你有立即危險，請立刻撥打 110 或 119；也可以撥打 1925 安心專線。\n\n'
-            '我可以帶你進入安全流程，幫你把求助訊息整理好。';
         await db.insertChatMessage(
           sessionId: sessionId,
           role: 'ai',
-          content: safetyFirst,
+          content: aiHighRiskSafetyReply,
         );
         _scrollToBottom();
         if (mounted) {

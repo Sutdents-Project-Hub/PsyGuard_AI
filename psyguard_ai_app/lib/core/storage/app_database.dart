@@ -5,6 +5,8 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:drift/native.dart';
 import 'package:uuid/uuid.dart';
 
+import '../network/ai_local_messages.dart';
+
 part 'app_database.g.dart';
 
 class ChatSessions extends Table {
@@ -232,6 +234,34 @@ class AppDatabase extends _$AppDatabase {
         riskTag: Value(riskTag),
       ),
     );
+  }
+
+  Future<void> cleanupLocalOnlyAiArtifacts() async {
+    await transaction(() async {
+      await (delete(chatMessages)..where(
+            (tbl) =>
+                tbl.role.equals('ai') &
+                tbl.content.isIn(localOnlyAssistantReplies.toList()),
+          ))
+          .go();
+
+      final summaries = await select(chatContextSummaries).get();
+      final contaminatedSessionIds = summaries
+          .where(
+            (summary) =>
+                localOnlyAssistantReplies.any(summary.summary.contains),
+          )
+          .map((summary) => summary.sessionId)
+          .toList();
+
+      if (contaminatedSessionIds.isEmpty) {
+        return;
+      }
+
+      await (delete(
+        chatContextSummaries,
+      )..where((tbl) => tbl.sessionId.isIn(contaminatedSessionIds))).go();
+    });
   }
 
   Future<void> updateSessionRisk(String sessionId, String riskLevel) {
