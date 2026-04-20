@@ -1,10 +1,9 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
-import 'package:drift/native.dart';
 import 'package:uuid/uuid.dart';
 
+import 'app_database_executor.dart';
 import '../network/ai_local_messages.dart';
 
 part 'app_database.g.dart';
@@ -106,15 +105,9 @@ class AiReports extends Table {
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-    : super(
-        executor ??
-            driftDatabase(
-              name: 'psyguard_ai_mvp',
-              native: const DriftNativeOptions(),
-            ),
-      );
+    : super(executor ?? openAppDatabaseExecutor(name: 'psyguard_ai_mvp'));
 
-  AppDatabase.memory() : super(NativeDatabase.memory());
+  AppDatabase.memory() : super(openInMemoryDatabaseExecutor());
 
   @override
   int get schemaVersion => 4;

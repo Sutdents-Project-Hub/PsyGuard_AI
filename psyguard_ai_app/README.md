@@ -64,6 +64,14 @@ psyguard_ai_app
    flutter analyze
    flutter test
    ```
+6. 若更新 `assets/icon.png`，重新產生各平台 icon：
+   ```bash
+   dart run flutter_launcher_icons
+   ```
+7. 若要建置 `Web`，先確認 `web/sqlite3.wasm` 與 `web/drift_worker.js` 已存在，再執行：
+   ```bash
+   flutter build web
+   ```
 
 ## 環境變數
 
@@ -93,6 +101,10 @@ APP_ENV=dev
   ```bash
   dart run build_runner build --delete-conflicting-outputs
   ```
+- 重新產生 App icon：
+  ```bash
+  dart run flutter_launcher_icons
+  ```
 - 執行單一測試檔：
   ```bash
   flutter test test/core/ai_chat_repository_test.dart
@@ -100,10 +112,10 @@ APP_ENV=dev
 
 ## 部署細節
 
-目前儲存庫內已驗證的是本地開發與測試流程，尚未提供可直接上 Coolify 的 Flutter Web 或後端部署腳本。若後續要部署，至少需要先確認：
+目前儲存庫內已驗證的是本地開發、測試與 Flutter Web 建置流程，尚未提供可直接上 Coolify 的 Flutter Web 或後端部署腳本。若後續要部署，至少需要先確認：
 
 - 目標平台是 `iOS`、`Android`、`macOS` 或 `Web`
-- 若要部署 `Web`，需補上對應 build 指令與靜態檔案發佈流程
+- 若要部署 `Web`，需將 `build/web` 目錄作為靜態網站發佈，且保留 `sqlite3.wasm` 與 `drift_worker.js`
 - 若要接雲端 API，需由部署平台安全注入 `.env` 中的模型設定
 
 ## 常見問題
