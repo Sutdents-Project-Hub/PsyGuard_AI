@@ -1,7 +1,7 @@
 name: psyguard_ai_app
 description: "PsyGuard AI Flutter MVP"
 publish_to: 'none'
-version: 1.0.0+11
+version: 1.0.0+12
 
 environment:
   sdk: ^3.9.2

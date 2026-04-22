@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -31,13 +32,21 @@ class ChatPage extends ConsumerStatefulWidget {
   ConsumerState<ChatPage> createState() => _ChatPageState();
 }
 
+enum _TtsPlaybackState { stopped, playing, paused }
+
 class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _textController = TextEditingController();
   final SpeechToText _speech = SpeechToText();
   final FlutterTts _tts = FlutterTts();
   bool _isSending = false;
+  bool _voiceInitialized = false;
   bool _speechReady = false;
   bool _isListening = false;
+  _TtsPlaybackState _ttsPlaybackState = _TtsPlaybackState.stopped;
+  int? _activeTtsMessageId;
+  String? _activeTtsText;
+  int _ttsProgressOffset = 0;
+  int _ttsSegmentStartOffset = 0;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -47,7 +56,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _ensureVoiceInitialized() async {
-    if (_speechReady) return;
+    if (_voiceInitialized) return;
 
     try {
       _speechReady = await _speech.initialize(
@@ -59,12 +68,39 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
 
     try {
+      await _tts.awaitSpeakCompletion(true);
       await _tts.setLanguage('zh-TW');
       await _tts.setSpeechRate(0.8);
       await _tts.setPitch(1.0);
+      _tts.setStartHandler(() {
+        if (!mounted) return;
+        setState(() => _ttsPlaybackState = _TtsPlaybackState.playing);
+      });
+      _tts.setCompletionHandler(_handleTtsFinished);
+      _tts.setCancelHandler(_handleTtsFinished);
+      _tts.setPauseHandler(() {
+        if (!mounted) return;
+        setState(() => _ttsPlaybackState = _TtsPlaybackState.paused);
+      });
+      _tts.setContinueHandler(() {
+        if (!mounted) return;
+        setState(() => _ttsPlaybackState = _TtsPlaybackState.playing);
+      });
+      _tts.setErrorHandler((message) {
+        debugPrint('[ChatPage] FlutterTts error: $message');
+        _handleTtsFinished();
+      });
+      _tts.setProgressHandler((text, startOffset, endOffset, word) {
+        _ttsProgressOffset = (_ttsSegmentStartOffset + endOffset).clamp(
+          0,
+          _activeTtsText?.length ?? 0,
+        );
+      });
     } catch (e) {
       debugPrint('[ChatPage] FlutterTts init failed: $e');
     }
+
+    _voiceInitialized = true;
   }
 
   @override
@@ -83,6 +119,88 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
+    }
+  }
+
+  bool get _isAndroidTts =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  bool _isActiveTtsMessage(ChatMessage msg) =>
+      _activeTtsMessageId == msg.id &&
+      _ttsPlaybackState != _TtsPlaybackState.stopped;
+
+  void _handleTtsFinished() {
+    if (!mounted) return;
+    setState(() {
+      _ttsPlaybackState = _TtsPlaybackState.stopped;
+      _activeTtsMessageId = null;
+      _activeTtsText = null;
+      _ttsProgressOffset = 0;
+      _ttsSegmentStartOffset = 0;
+    });
+  }
+
+  Future<void> _speakMessage(ChatMessage msg) async {
+    await _ensureVoiceInitialized();
+
+    if (_activeTtsMessageId != null && _activeTtsMessageId != msg.id) {
+      await _tts.stop();
+    }
+
+    final text = msg.content.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _activeTtsMessageId = msg.id;
+      _activeTtsText = text;
+      _ttsPlaybackState = _TtsPlaybackState.playing;
+      _ttsProgressOffset = 0;
+      _ttsSegmentStartOffset = 0;
+    });
+
+    final result = await _tts.speak(text);
+    if (result != 1 && mounted) {
+      _handleTtsFinished();
+    }
+  }
+
+  Future<void> _pauseSpeaking() async {
+    if (_ttsPlaybackState != _TtsPlaybackState.playing) return;
+    final result = await _tts.pause();
+    if (result == 1 && mounted) {
+      setState(() => _ttsPlaybackState = _TtsPlaybackState.paused);
+    }
+  }
+
+  Future<void> _resumeSpeaking() async {
+    final activeText = _activeTtsText;
+    if (_activeTtsMessageId == null || activeText == null) return;
+
+    final resumeOffset = _ttsProgressOffset.clamp(0, activeText.length);
+    if (resumeOffset >= activeText.length) {
+      _handleTtsFinished();
+      return;
+    }
+
+    final textToSpeak = _isAndroidTts
+        ? activeText
+        : activeText.substring(resumeOffset);
+
+    setState(() {
+      _ttsPlaybackState = _TtsPlaybackState.playing;
+      _ttsSegmentStartOffset = resumeOffset;
+    });
+
+    final result = await _tts.speak(textToSpeak);
+    if (result != 1 && mounted) {
+      _handleTtsFinished();
+    }
+  }
+
+  Future<void> _stopSpeaking() async {
+    final result = await _tts.stop();
+    if (result == 1 && mounted) {
+      _handleTtsFinished();
     }
   }
 
@@ -422,39 +540,68 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
             if (!isUser) ...[
               const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _tts.speak(msg.content),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: PsyGuardTheme.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.volume_up_rounded,
-                        size: 14,
-                        color: PsyGuardTheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '朗讀',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: PsyGuardTheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+              if (_isActiveTtsMessage(msg))
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildTtsActionButton(
+                      icon: _ttsPlaybackState == _TtsPlaybackState.paused
+                          ? Icons.play_arrow_rounded
+                          : Icons.pause_rounded,
+                      label: _ttsPlaybackState == _TtsPlaybackState.paused
+                          ? '繼續播放'
+                          : '暫停',
+                      onTap: _ttsPlaybackState == _TtsPlaybackState.paused
+                          ? _resumeSpeaking
+                          : _pauseSpeaking,
+                    ),
+                    _buildTtsActionButton(
+                      icon: Icons.stop_rounded,
+                      label: '終止',
+                      onTap: _stopSpeaking,
+                    ),
+                  ],
+                )
+              else
+                _buildTtsActionButton(
+                  icon: Icons.volume_up_rounded,
+                  label: '朗讀',
+                  onTap: () => _speakMessage(msg),
                 ),
-              ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTtsActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: PsyGuardTheme.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: PsyGuardTheme.primary),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: PsyGuardTheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
