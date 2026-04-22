@@ -267,73 +267,41 @@ class _HomeContentState extends State<_HomeContent> {
     final theme = widget.theme;
     final riskColor = PsyGuardTheme.riskColor(_riskScore);
     final riskLabel = switch (_riskLevel) {
-      'high' => '需要關注',
+      'high' => '需要被關注',
       'medium' => '留意中',
       _ => '狀態良好',
     };
 
-    // Priority reorder: when high risk, move safety & tools to front
-    final exploreCards = _isHighRisk
-        ? [
-            _cardData(
-              '行政救援',
-              '案號 115-E018647',
-              Icons.health_and_safety_rounded,
-              const Color(0xFFD14343),
-              '/safety',
-            ),
-            _cardData(
-              '心理工具箱',
-              '心情急救',
-              Icons.style_rounded,
-              const Color(0xFF6B4C9A),
-              '/tools',
-            ),
-            _cardData(
-              '筆記紀錄',
-              '情緒抒發',
-              Icons.edit_note_rounded,
-              const Color(0xFFD4A373),
-              '/checkin',
-            ),
-            _cardData(
-              '身心趨勢',
-              '健康數據趨勢',
-              Icons.favorite_rounded,
-              const Color(0xFFE5989B),
-              '/trends',
-            ),
-          ]
-        : [
-            _cardData(
-              '筆記紀錄',
-              '情緒抒發',
-              Icons.edit_note_rounded,
-              const Color(0xFFD4A373),
-              '/checkin',
-            ),
-            _cardData(
-              '身心趨勢',
-              '健康數據趨勢',
-              Icons.favorite_rounded,
-              const Color(0xFFE5989B),
-              '/trends',
-            ),
-            _cardData(
-              'AI 陪伴',
-              '舒心對話',
-              Icons.chat_bubble_outline_rounded,
-              const Color(0xFF5B8C85),
-              '/chat',
-            ),
-            _cardData(
-              '睡眠紀錄',
-              '記錄睡眠狀況',
-              Icons.bedtime_outlined,
-              const Color(0xFF6D8299),
-              '/sleep',
-            ),
-          ];
+    final exploreCards = [
+      _cardData(
+        '筆記紀錄',
+        '情緒抒發',
+        Icons.edit_note_rounded,
+        const Color(0xFFD4A373),
+        '/checkin',
+      ),
+      _cardData(
+        '身心趨勢',
+        '健康數據趨勢',
+        Icons.favorite_rounded,
+        const Color(0xFFE5989B),
+        '/trends',
+      ),
+      _cardData(
+        'AI 陪伴',
+        '舒心對話',
+        Icons.chat_bubble_outline_rounded,
+        const Color(0xFF5B8C85),
+        '/chat',
+      ),
+      _cardData(
+        '睡眠紀錄',
+        '記錄睡眠狀況',
+        Icons.bedtime_outlined,
+        const Color(0xFF6D8299),
+        '/sleep',
+      ),
+    ];
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -391,6 +359,22 @@ class _HomeContentState extends State<_HomeContent> {
           ),
         ),
         const SizedBox(height: 32),
+
+        if (_isHighRisk) ...[
+          MicroShake(
+            enabled: true,
+            child: _InteractiveCard(
+              title: '行政救援',
+              subtitle: '案號 115-E018647',
+              icon: Icons.emergency_rounded,
+              color: const Color(0xFFD14343),
+              route: '/safety',
+              isBold: true,
+              isFullWidth: true,
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
 
         // ── Explore Section ──────────────────────────
         Text('探索自我', style: theme.textTheme.titleMedium),
@@ -456,23 +440,6 @@ class _HomeContentState extends State<_HomeContent> {
             ),
           ],
         ),
-
-        // ── Safety / Emergency Section (always visible) ─────────────
-        if (_isHighRisk) ...[
-          const SizedBox(height: 24),
-          MicroShake(
-            enabled: true,
-            child: _InteractiveCard(
-              title: '行政救援',
-              subtitle: '案號 115-E018647',
-              icon: Icons.emergency_rounded,
-              color: const Color(0xFFD14343),
-              route: '/safety',
-              isBold: true,
-              isFullWidth: true,
-            ),
-          ),
-        ],
 
         const SizedBox(height: 40),
       ],
