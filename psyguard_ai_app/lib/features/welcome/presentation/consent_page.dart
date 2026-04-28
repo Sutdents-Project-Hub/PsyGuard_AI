@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/security/local_settings_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_brand_icon.dart';
-import '../../../l10n/strings_zh_tw.dart';
+import '../../../l10n/app_strings.dart';
 
 class ConsentPage extends ConsumerStatefulWidget {
   const ConsentPage({super.key});
@@ -22,6 +22,8 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(ref.watch(appLanguageControllerProvider));
+
     return Scaffold(
       backgroundColor: PsyGuardTheme.background,
       appBar: AppBar(
@@ -29,7 +31,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          '開始前確認',
+          strings.consentTitle,
           style: GoogleFonts.nunitoSans(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -73,7 +75,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  StringsZhTw.disclaimerTitle,
+                                  strings.disclaimerTitle,
                                   style: GoogleFonts.nunitoSans(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
@@ -84,7 +86,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              StringsZhTw.disclaimerBody,
+                              strings.disclaimerBody,
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 14,
                                 height: 1.6,
@@ -93,8 +95,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              '隱私與資料：第一版資料只儲存在你的手機本機（可在設定中清除）。\n'
-                              'AI：若你之後自行設定 API Key，聊天內容可能會送到第三方 AI 服務進行生成回覆。',
+                              strings.consentPrivacyBody,
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 14,
                                 height: 1.6,
@@ -127,7 +128,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                               child: Padding(
                                 padding: const EdgeInsets.only(top: 2),
                                 child: Text(
-                                  '我了解本應用不是醫療工具；若有立即危險我會優先尋求真人協助（110/119/1925）。',
+                                  strings.consentCheckbox,
                                   style: GoogleFonts.nunitoSans(
                                     fontSize: 14,
                                     height: 1.5,
@@ -173,14 +174,14 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          child: const Text('同意並開始'),
+                          child: Text(strings.consentAgree),
                         ),
                       ),
                       const SizedBox(height: 10),
                       TextButton(
                         onPressed: () => context.go('/safety'),
                         child: Text(
-                          '我現在需要立即求助',
+                          strings.needImmediateHelp,
                           style: GoogleFonts.nunitoSans(
                             color: PsyGuardTheme.textSecondary,
                             fontWeight: FontWeight.w700,

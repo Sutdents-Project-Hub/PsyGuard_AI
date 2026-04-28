@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/security/local_settings_service.dart';
 import '../core/theme/app_theme.dart';
 import 'router.dart';
 
@@ -12,6 +13,7 @@ class PsyGuardApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final language = ref.watch(appLanguageControllerProvider);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -25,8 +27,8 @@ class PsyGuardApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
         theme: PsyGuardTheme.lightTheme,
         routerConfig: router,
-        locale: const Locale('zh', 'TW'),
-        supportedLocales: const [Locale('zh', 'TW')],
+        locale: language.locale,
+        supportedLocales: const [Locale('en'), Locale('zh', 'TW')],
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,

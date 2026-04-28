@@ -5,8 +5,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
+import '../security/local_settings_service.dart';
 import '../storage/app_database.dart';
 import '../storage/database_provider.dart';
+import '../../l10n/app_language.dart';
 import 'ai_api_client.dart';
 import 'app_config_controller.dart';
 import 'dio_provider.dart';
@@ -50,6 +52,7 @@ final aiChatRepositoryProvider = Provider<AiChatRepository>((ref) {
     client: ref.watch(aiApiClientProvider),
     db: ref.watch(appDatabaseProvider),
     config: ref.watch(appConfigProvider),
+    language: ref.watch(appLanguageControllerProvider),
   );
 });
 
@@ -58,13 +61,16 @@ class AiChatRepositoryImpl implements AiChatRepository {
     required AiApiClient client,
     required AppDatabase db,
     required AppConfig config,
+    AppLanguage language = AppLanguage.zhTw,
   }) : _client = client,
        _db = db,
-       _config = config;
+       _config = config,
+       _language = language;
 
   final AiApiClient _client;
   final AppDatabase _db;
   final AppConfig _config;
+  final AppLanguage _language;
 
   static const _estimatedContextWindowTokens = 128000;
   static const _compressionTriggerTokens = 118000;
@@ -121,7 +127,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
     );
 
     return AiReply(
-      content: aiFallbackReply,
+      content: aiFallbackReplyFor(_language),
       isFallback: true,
       model: _config.model,
       warningMessage: userFacingAiError(lastError),
@@ -263,11 +269,13 @@ class AiChatRepositoryImpl implements AiChatRepository {
     final summaryMessages = <Map<String, String>>[
       {'role': 'system', 'content': _summaryPrompt},
       if (existingSummary != null && existingSummary.trim().isNotEmpty)
-        {'role': 'system', 'content': '目前已保存的長期摘要：\n${existingSummary.trim()}'},
+        {
+          'role': 'system',
+          'content': _existingSummaryMessage(existingSummary.trim()),
+        },
       {
         'role': 'user',
-        'content':
-            '請整合以下較舊的對話內容，產出更新後的長期摘要：\n${_formatHistoryForSummary(history)}',
+        'content': _summarizeHistoryMessage(_formatHistoryForSummary(history)),
       },
     ];
 
@@ -343,11 +351,14 @@ class AiChatRepositoryImpl implements AiChatRepository {
     return <Map<String, String>>[
       {'role': 'system', 'content': _systemPrompt},
       if (contextSummary != null && contextSummary.trim().isNotEmpty)
-        {'role': 'system', 'content': '今日風險摘要：${contextSummary.trim()}'},
+        {
+          'role': 'system',
+          'content': _todayRiskSummaryMessage(contextSummary.trim()),
+        },
       if (summaryText != null && summaryText.trim().isNotEmpty)
         {
           'role': 'system',
-          'content': '以下是已壓縮的先前對話摘要，請視為長期記憶並延續關係脈絡：\n${summaryText.trim()}',
+          'content': _compressedSummaryMessage(summaryText.trim()),
         },
       ...history.map(
         (message) => {'role': message.role, 'content': message.content},
@@ -416,7 +427,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
     final parts = <String>[];
     final cleanedSummary = existingSummary?.trim();
     if (cleanedSummary != null && cleanedSummary.isNotEmpty) {
-      parts.add('先前摘要：$cleanedSummary');
+      parts.add(_localPreviousSummary(cleanedSummary));
     }
 
     final userMessages = history
@@ -429,10 +440,10 @@ class AiChatRepositoryImpl implements AiChatRepository {
         .toList();
 
     if (userMessages.isNotEmpty) {
-      parts.add('使用者先前提到：${userMessages.takeLast(3).join('；')}');
+      parts.add(_localUserMentioned(userMessages.takeLast(3)));
     }
     if (assistantMessages.isNotEmpty) {
-      parts.add('AI 已回應：${assistantMessages.takeLast(2).join('；')}');
+      parts.add(_localAssistantReplied(assistantMessages.takeLast(2)));
     }
 
     return _truncateSummary(parts.join('\n'));
@@ -459,17 +470,9 @@ class AiChatRepositoryImpl implements AiChatRepository {
 
   @override
   Future<String> generateReport({required String analysisData}) async {
-    const systemPrompt =
-        '你是專業的心理健康數據分析師。請分析以下使用者近期數據（包含心情百分比 0-100、睡眠時長、風險評估分數）。'
-        '請找出數據中的模式、潛在觸發因素，並提供 3 個具體且可行的改善建議。'
-        '請保持語氣溫柔、鼓勵且專業。'
-        '輸出格式請使用 Markdown，第一行必須是標題「# 心理健康趨勢分析」，接著是重點列點。'
-        '字數控制在 300-500 字之間。'
-        '語言：繁體中文。';
-
     final messages = <Map<String, String>>[
-      {'role': 'system', 'content': systemPrompt},
-      {'role': 'user', 'content': '請分析我的數據：\n$analysisData'},
+      {'role': 'system', 'content': _reportPrompt},
+      {'role': 'user', 'content': _reportUserMessage(analysisData)},
     ];
 
     try {
@@ -483,24 +486,98 @@ class AiChatRepositoryImpl implements AiChatRepository {
     }
   }
 
-  String get _systemPrompt =>
-      '你在 PsyGuard AI 中扮演一位心理輔導師風格的 AI 陪伴者。'
-      '請全程使用繁體中文，以支持性會談方式回應：先同理、再澄清、最後提供一個可執行的小步驟。'
-      '你需要記住先前對話脈絡，延續使用者已提過的壓力來源、情緒、支持系統與已嘗試的方法。'
-      '你必須根據使用者最近的對話內容，自行判斷當下更需要哪一種回應方式。'
-      '如果對方情緒極端、明顯低落、接近失衡或只是想被理解，請以陪伴傾聽為主，先接住情緒，避免一次給太多建議。'
-      '如果對方狀態較緩和、已有餘裕整理問題，或主動詢問做法，再提供較具體的分析、建議或下一步。'
-      '你不能做醫療診斷，也不能宣稱可替代心理師、醫師或任何執照專業。'
-      '禁止鼓勵自傷、自殺或危險行為。'
-      '若使用者出現自傷或高度危機語句，先安撫並明確建議立即尋求真人協助（校方輔導老師、1925、110、119）。'
-      '避免條列過多理論，優先使用自然對話。';
+  bool get _usesZhTw => _language == AppLanguage.zhTw;
 
-  String get _summaryPrompt =>
-      '你是心理陪伴對話摘要整理器。'
-      '請把對話壓縮成可長期保存的摘要，供下一次回應使用。'
-      '摘要必須只保留與陪伴有關的重要脈絡：主要困擾、情緒、觸發事件、保護因子、可用資源、已嘗試的方法、未解決問題。'
-      '不要加入新事實，不要做診斷，不要保留客套話。'
-      '輸出使用繁體中文，控制在 8 點內、800 字內。';
+  String get _reportPrompt {
+    if (_usesZhTw) {
+      return '你是專業的心理健康數據分析師。請分析以下使用者近期數據（包含心情百分比 0-100、睡眠時長、風險評估分數）。'
+          '請找出數據中的模式、潛在觸發因素，並提供 3 個具體且可行的改善建議。'
+          '請保持語氣溫柔、鼓勵且專業。'
+          '輸出格式請使用 Markdown，第一行必須是標題「# 心理健康趨勢分析」，接著是重點列點。'
+          '字數控制在 300-500 字之間。'
+          '語言：繁體中文。';
+    }
+
+    return 'You are a professional mental health data analyst. Analyze the user\'s recent data, including mood percentage from 0-100, sleep duration, and risk scores. '
+        'Identify patterns, possible triggers, and provide 3 concrete, actionable suggestions. '
+        'Keep the tone warm, encouraging, and professional. '
+        'Use Markdown. The first line must be the title "# Mental Health Trend Analysis", followed by concise bullet points. '
+        'Keep the response between 300 and 500 words. Language: English.';
+  }
+
+  String _reportUserMessage(String analysisData) {
+    return _usesZhTw
+        ? '請分析我的數據：\n$analysisData'
+        : 'Please analyze my data:\n$analysisData';
+  }
+
+  String get _systemPrompt {
+    if (_usesZhTw) {
+      return '你在 PsyGuard AI 中扮演一位心理輔導師風格的 AI 陪伴者。'
+          '請全程使用繁體中文，以支持性會談方式回應：先同理、再澄清、最後提供一個可執行的小步驟。'
+          '你需要記住先前對話脈絡，延續使用者已提過的壓力來源、情緒、支持系統與已嘗試的方法。'
+          '你必須根據使用者最近的對話內容，自行判斷當下更需要哪一種回應方式。'
+          '如果對方情緒極端、明顯低落、接近失衡或只是想被理解，請以陪伴傾聽為主，先接住情緒，避免一次給太多建議。'
+          '如果對方狀態較緩和、已有餘裕整理問題，或主動詢問做法，再提供較具體的分析、建議或下一步。'
+          '你不能做醫療診斷，也不能宣稱可替代心理師、醫師或任何執照專業。'
+          '禁止鼓勵自傷、自殺或危險行為。'
+          '若使用者出現自傷或高度危機語句，先安撫並明確建議立即尋求真人協助（校方輔導老師、1925、110、119）。'
+          '避免條列過多理論，優先使用自然對話。';
+    }
+
+    return 'In PsyGuard AI, you act as an AI companion with the style of a mental health counselor. '
+        'Use English throughout. Respond like a supportive conversation: start with empathy, then clarify, then offer one actionable small step. '
+        'Remember prior context and continue the relationship using the user\'s stressors, emotions, support system, and tried strategies. '
+        'Decide from the recent conversation whether the user needs comfort, reflection, or practical suggestions right now. '
+        'If the user is emotionally overwhelmed, very low, close to losing balance, or mainly wants to be understood, focus on listening and emotional support first; avoid giving too much advice at once. '
+        'If the user is calmer, has capacity to organize the issue, or directly asks what to do, provide more concrete analysis, suggestions, or next steps. '
+        'Do not diagnose, and do not claim to replace licensed mental health or medical professionals. '
+        'Never encourage self-harm, suicide, or dangerous behavior. '
+        'If the user expresses self-harm or high crisis signals, first stabilize and clearly recommend immediate real-person support such as school counselors, trusted adults, crisis lines, or local emergency services. '
+        'Prefer natural conversation over long theoretical bullet lists.';
+  }
+
+  String get _summaryPrompt {
+    if (_usesZhTw) {
+      return '你是心理陪伴對話摘要整理器。'
+          '請把對話壓縮成可長期保存的摘要，供下一次回應使用。'
+          '摘要必須只保留與陪伴有關的重要脈絡：主要困擾、情緒、觸發事件、保護因子、可用資源、已嘗試的方法、未解決問題。'
+          '不要加入新事實，不要做診斷，不要保留客套話。'
+          '輸出使用繁體中文，控制在 8 點內、800 字內。';
+    }
+
+    return 'You are a summarizer for supportive mental health conversations. '
+        'Compress the conversation into a long-term summary for future replies. '
+        'Keep only context relevant to support: main concerns, emotions, triggers, protective factors, available resources, tried strategies, and unresolved issues. '
+        'Do not add new facts, do not diagnose, and do not preserve pleasantries. '
+        'Write in English, within 8 bullets and 800 words.';
+  }
+
+  String _existingSummaryMessage(String summary) => _usesZhTw
+      ? '目前已保存的長期摘要：\n$summary'
+      : 'Current saved long-term summary:\n$summary';
+
+  String _summarizeHistoryMessage(String history) => _usesZhTw
+      ? '請整合以下較舊的對話內容，產出更新後的長期摘要：\n$history'
+      : 'Integrate the older conversation below and produce an updated long-term summary:\n$history';
+
+  String _todayRiskSummaryMessage(String summary) =>
+      _usesZhTw ? '今日風險摘要：$summary' : 'Today\'s risk summary: $summary';
+
+  String _compressedSummaryMessage(String summary) => _usesZhTw
+      ? '以下是已壓縮的先前對話摘要，請視為長期記憶並延續關係脈絡：\n$summary'
+      : 'Below is a compressed summary of prior conversation. Treat it as long-term memory and continue the relationship context:\n$summary';
+
+  String _localPreviousSummary(String summary) =>
+      _usesZhTw ? '先前摘要：$summary' : 'Previous summary: $summary';
+
+  String _localUserMentioned(List<String> messages) => _usesZhTw
+      ? '使用者先前提到：${messages.join('；')}'
+      : 'The user previously mentioned: ${messages.join('; ')}';
+
+  String _localAssistantReplied(List<String> messages) => _usesZhTw
+      ? 'AI 已回應：${messages.join('；')}'
+      : 'The AI previously replied: ${messages.join('; ')}';
 }
 
 class _PromptHistoryMessage {

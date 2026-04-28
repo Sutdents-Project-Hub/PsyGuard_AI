@@ -5,6 +5,7 @@ import 'package:psyguard_ai_app/core/network/ai_api_client.dart';
 import 'package:psyguard_ai_app/core/network/ai_chat_repository.dart';
 import 'package:psyguard_ai_app/core/network/ai_local_messages.dart';
 import 'package:psyguard_ai_app/core/storage/app_database.dart';
+import 'package:psyguard_ai_app/l10n/app_language.dart';
 
 class FakeAiApiClient implements AiApiClient {
   FakeAiApiClient(this._responses);
@@ -146,6 +147,58 @@ void main() {
         expect(request.first['content'], contains('如果對方狀態較緩和、已有餘裕整理問題'));
       },
     );
+
+    test('uses English prompts when language preference is English', () async {
+      final client = FakeAiApiClient(['I am here with you.']);
+      final repo = AiChatRepositoryImpl(
+        client: client,
+        db: db,
+        config: AppConfig(
+          baseUrl: 'https://example.com',
+          apiKey: 'test-key',
+          model: 'mock-model',
+          appEnv: 'test',
+        ),
+        language: AppLanguage.english,
+      );
+
+      await createSession('s-en');
+      await repo.sendMessage(sessionId: 's-en', userText: 'I feel tired');
+
+      final request = client.requests.single;
+      expect(request.first['content'], contains('Use English throughout'));
+    });
+
+    test('uses English fallback when language preference is English', () async {
+      final error = DioException(
+        requestOptions: RequestOptions(path: '/v1/chat/completions'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/v1/chat/completions'),
+          statusCode: 500,
+        ),
+      );
+      final repo = AiChatRepositoryImpl(
+        client: FakeAiApiClient([error, error, error]),
+        db: db,
+        config: AppConfig(
+          baseUrl: 'https://example.com',
+          apiKey: 'test-key',
+          model: 'mock-model',
+          appEnv: 'test',
+        ),
+        language: AppLanguage.english,
+      );
+
+      await createSession('s-en-fallback');
+
+      final reply = await repo.sendMessage(
+        sessionId: 's-en-fallback',
+        userText: 'help',
+      );
+
+      expect(reply.isFallback, isTrue);
+      expect(reply.content, aiFallbackReplyEn);
+    });
 
     test('compresses old context and persists summary near 128k', () async {
       final client = FakeAiApiClient(['長期摘要', '這是新的回應']);

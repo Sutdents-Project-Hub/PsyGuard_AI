@@ -2,6 +2,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../l10n/app_language.dart';
+
 const defaultTtsSpeechRate = 0.55;
 const minTtsSpeechRate = 0.35;
 const maxTtsSpeechRate = 1.0;
@@ -27,6 +29,30 @@ final ttsSpeechRateProvider = FutureProvider<double>((ref) async {
   return ref.read(localSettingsServiceProvider).getTtsSpeechRate();
 });
 
+final appLanguageControllerProvider =
+    StateNotifierProvider<AppLanguageController, AppLanguage>((ref) {
+      final controller = AppLanguageController(
+        ref.read(localSettingsServiceProvider),
+      );
+      controller.load();
+      return controller;
+    });
+
+class AppLanguageController extends StateNotifier<AppLanguage> {
+  AppLanguageController(this._settings) : super(AppLanguage.english);
+
+  final LocalSettingsService _settings;
+
+  Future<void> load() async {
+    state = await _settings.getAppLanguage();
+  }
+
+  Future<void> setLanguage(AppLanguage language) async {
+    await _settings.setAppLanguage(language);
+    state = language;
+  }
+}
+
 class LocalSettingsService {
   LocalSettingsService(this._storage);
 
@@ -41,6 +67,7 @@ class LocalSettingsService {
   static const _consentVersionKey = 'consent_version';
   static const _welcomeSeenKey = 'welcome_seen';
   static const _ttsSpeechRateKey = 'tts_speech_rate';
+  static const _appLanguageKey = 'app_language';
 
   Future<void> saveAiSettings({
     required String baseUrl,
@@ -113,11 +140,22 @@ class LocalSettingsService {
     return normalizeTtsSpeechRate(value ?? defaultTtsSpeechRate);
   }
 
+  Future<void> setAppLanguage(AppLanguage language) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_appLanguageKey, language.storageValue);
+  }
+
+  Future<AppLanguage> getAppLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return AppLanguage.fromStorageValue(prefs.getString(_appLanguageKey));
+  }
+
   Future<void> clearAll() async {
     await _storage.deleteAll();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_welcomeSeenKey);
     await prefs.remove(_ttsSpeechRateKey);
+    await prefs.remove(_appLanguageKey);
   }
 }
 

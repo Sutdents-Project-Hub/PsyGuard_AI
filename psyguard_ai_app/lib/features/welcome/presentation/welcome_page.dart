@@ -6,13 +6,15 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/security/local_settings_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_brand_icon.dart';
-import '../../../l10n/strings_zh_tw.dart';
+import '../../../l10n/app_strings.dart';
 
 class WelcomePage extends ConsumerWidget {
   const WelcomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(ref.watch(appLanguageControllerProvider));
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -32,7 +34,7 @@ class WelcomePage extends ConsumerWidget {
               ),
               const SizedBox(height: 32),
               Text(
-                StringsZhTw.appName,
+                strings.appName,
                 style: GoogleFonts.nunitoSans(
                   color: PsyGuardTheme.textPrimary,
                   fontSize: 42,
@@ -43,7 +45,7 @@ class WelcomePage extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                '你的心理健康\n陪伴夥伴',
+                strings.welcomeTagline,
                 style: GoogleFonts.nunitoSans(
                   color: PsyGuardTheme.textSecondary,
                   fontSize: 24,
@@ -73,7 +75,7 @@ class WelcomePage extends ConsumerWidget {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          StringsZhTw.disclaimerTitle,
+                          strings.disclaimerTitle,
                           style: GoogleFonts.nunitoSans(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -84,7 +86,7 @@ class WelcomePage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      StringsZhTw.disclaimerBody,
+                      strings.disclaimerBody,
                       style: GoogleFonts.nunitoSans(
                         color: PsyGuardTheme.textSecondary,
                         fontSize: 14,
@@ -125,7 +127,7 @@ class WelcomePage extends ConsumerWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  child: const Text('開始使用'),
+                  child: Text(strings.getStarted),
                 ),
               ),
               const SizedBox(height: 40),

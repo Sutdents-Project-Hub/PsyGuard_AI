@@ -10,6 +10,7 @@ import '../../../core/network/app_config_controller.dart';
 import '../../../core/security/local_settings_service.dart';
 import '../../../core/storage/database_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_language.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -63,6 +64,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     });
 
     final config = ref.watch(appConfigProvider);
+    final language = ref.watch(appLanguageControllerProvider);
+    final copy = _SettingsCopy(language);
     final aiEnabled = config.isConfigured;
     if (!_didSeedFields) {
       _seedFields(config);
@@ -75,7 +78,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          '設定',
+          copy.title,
           style: GoogleFonts.nunitoSans(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -87,7 +90,56 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           children: [
-            _sectionTitle('AI 狀態'),
+            _sectionTitle(copy.languageSectionTitle),
+            const SizedBox(height: 12),
+            _card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    copy.languageDescription,
+                    style: GoogleFonts.nunitoSans(
+                      fontSize: 13,
+                      height: 1.6,
+                      color: PsyGuardTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SegmentedButton<AppLanguage>(
+                    segments: [
+                      ButtonSegment<AppLanguage>(
+                        value: AppLanguage.english,
+                        icon: const Icon(Icons.translate_rounded),
+                        label: Text(copy.englishOption),
+                      ),
+                      ButtonSegment<AppLanguage>(
+                        value: AppLanguage.zhTw,
+                        icon: const Icon(Icons.language_rounded),
+                        label: Text(copy.chineseOption),
+                      ),
+                    ],
+                    selected: {language},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (selection) {
+                      final selectedLanguage = selection.first;
+                      if (selectedLanguage != language) {
+                        _saveLanguage(selectedLanguage);
+                      }
+                    },
+                    style: ButtonStyle(
+                      textStyle: WidgetStatePropertyAll(
+                        GoogleFonts.nunitoSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            _sectionTitle(copy.aiStatusSectionTitle),
             const SizedBox(height: 12),
             _card(
               child: Row(
@@ -106,7 +158,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          aiEnabled ? '已啟用 AI 串接' : '離線模式（未設定 API Key）',
+                          aiEnabled ? copy.aiEnabled : copy.aiOffline,
                           style: GoogleFonts.nunitoSans(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -116,8 +168,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         const SizedBox(height: 6),
                         Text(
                           aiEnabled
-                              ? '模型：${config.model}\n來源：${config.isUserProvided ? '使用者自訂設定' : '環境變數'}'
-                              : '目前聊天會使用示範回覆；完成下方 AI 設定後，聊天與分析功能都會改用你提供的服務。',
+                              ? copy.aiStatusDetails(
+                                  model: config.model,
+                                  isUserProvided: config.isUserProvided,
+                                )
+                              : copy.aiOfflineDescription,
                           style: GoogleFonts.nunitoSans(
                             fontSize: 13,
                             height: 1.5,
@@ -131,14 +186,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             const SizedBox(height: 18),
-            _sectionTitle('AI 設定'),
+            _sectionTitle(copy.aiSettingsSectionTitle),
             const SizedBox(height: 12),
             _card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '你可以自行提供 OpenAI 相容 API 的 Base URL、API Key 與模型名稱。為了方便測試，已預設帶入 free_chatgpt_api 建議的 Base URL 與 gpt-4o-mini；你只需要填入 API Key。儲存後，整個 App 的 AI 對話與趨勢分析都會使用這組設定。',
+                    copy.aiSettingsDescription,
                     style: GoogleFonts.nunitoSans(
                       fontSize: 13,
                       height: 1.6,
@@ -172,7 +227,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   const SizedBox(height: 12),
                   _buildTextField(
                     controller: _modelController,
-                    label: '模型',
+                    label: copy.modelFieldLabel,
                     hint: _recommendedModel,
                   ),
                   const SizedBox(height: 16),
@@ -192,7 +247,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      child: Text(_isSaving ? '儲存中...' : '儲存 AI 設定'),
+                      child: Text(
+                        _isSaving ? copy.saving : copy.saveAiSettings,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -214,14 +271,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      child: const Text('清除 AI 設定'),
+                      child: Text(copy.clearAiSettings),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 18),
-            _sectionTitle('語音設定'),
+            _sectionTitle(copy.voiceSectionTitle),
             const SizedBox(height: 12),
             _card(
               child: _didLoadTtsSpeechRate
@@ -229,7 +286,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '調整 AI 回覆朗讀速度。儲存後，聊天頁的語音播放會立即套用新的語速。',
+                          copy.voiceDescription,
                           style: GoogleFonts.nunitoSans(
                             fontSize: 13,
                             height: 1.6,
@@ -240,7 +297,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         Row(
                           children: [
                             Text(
-                              '目前語速',
+                              copy.currentSpeechRate,
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
@@ -249,7 +306,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             ),
                             const Spacer(),
                             Text(
-                              '${_describeTtsSpeechRate(_ttsSpeechRate)} (${_ttsSpeechRate.toStringAsFixed(2)})',
+                              '${_describeTtsSpeechRate(_ttsSpeechRate, copy)} (${_ttsSpeechRate.toStringAsFixed(2)})',
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -280,7 +337,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         Row(
                           children: [
                             Text(
-                              '較慢',
+                              copy.slower,
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 12,
                                 color: PsyGuardTheme.textSecondary,
@@ -288,7 +345,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             ),
                             const Spacer(),
                             Text(
-                              '較快',
+                              copy.faster,
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 12,
                                 color: PsyGuardTheme.textSecondary,
@@ -318,7 +375,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               ),
                             ),
                             child: Text(
-                              _isSavingTtsSpeechRate ? '儲存中...' : '儲存語音設定',
+                              _isSavingTtsSpeechRate
+                                  ? copy.saving
+                                  : copy.saveVoiceSettings,
                             ),
                           ),
                         ),
@@ -327,12 +386,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   : const Center(child: CircularProgressIndicator()),
             ),
             const SizedBox(height: 18),
-            _sectionTitle('資料與隱私'),
+            _sectionTitle(copy.dataPrivacySectionTitle),
             const SizedBox(height: 12),
             _card(
               child: Text(
-                '第一版資料只儲存在本機（SQLite）。你可以隨時在這裡清除資料。\n'
-                '若你之後自行設定 API Key，聊天內容可能會送到第三方 AI 服務進行生成回覆。',
+                copy.dataPrivacyDescription,
                 style: GoogleFonts.nunitoSans(
                   fontSize: 13,
                   height: 1.6,
@@ -341,14 +399,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             const SizedBox(height: 18),
-            _sectionTitle('重置'),
+            _sectionTitle(copy.resetSectionTitle),
             const SizedBox(height: 12),
             _card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '清除本機資料',
+                    copy.clearLocalDataTitle,
                     style: GoogleFonts.nunitoSans(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -357,7 +415,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '將刪除所有聊天、日記、睡眠、趨勢、AI 報告與設定（包含同意狀態）。此操作無法復原。',
+                    copy.clearLocalDataDescription,
                     style: GoogleFonts.nunitoSans(
                       fontSize: 13,
                       height: 1.6,
@@ -374,17 +432,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           context: context,
                           builder: (context) {
                             return AlertDialog(
-                              title: const Text('確認清除？'),
-                              content: const Text('確定要清除所有本機資料與設定嗎？'),
+                              title: Text(copy.clearConfirmTitle),
+                              content: Text(copy.clearConfirmContent),
                               actions: [
                                 TextButton(
                                   onPressed: () =>
                                       Navigator.pop(context, false),
-                                  child: const Text('取消'),
+                                  child: Text(copy.cancel),
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.pop(context, true),
-                                  child: const Text('清除'),
+                                  child: Text(copy.clear),
                                 ),
                               ],
                             );
@@ -399,6 +457,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         final settings = ref.read(localSettingsServiceProvider);
                         await db.clearAllData();
                         await settings.clearAll();
+                        await ref
+                            .read(appLanguageControllerProvider.notifier)
+                            .setLanguage(AppLanguage.english);
                         ref.invalidate(welcomeSeenProvider);
                         ref.invalidate(consentAcceptedProvider);
                         if (context.mounted) {
@@ -416,7 +477,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      child: const Text('清除資料'),
+                      child: Text(copy.clearDataButton),
                     ),
                   ),
                 ],
@@ -505,18 +566,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _saveAiSettings() async {
+    final copy = _SettingsCopy(ref.read(appLanguageControllerProvider));
     final baseUrl = _baseUrlController.text.trim();
     final apiKey = _apiKeyController.text.trim();
     final model = _modelController.text.trim();
 
     if (baseUrl.isEmpty || apiKey.isEmpty) {
-      _showMessage('請先填寫 API Base URL 與 API Key');
+      _showMessage(copy.missingApiFields);
       return;
     }
 
     final uri = Uri.tryParse(baseUrl);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      _showMessage('API Base URL 格式不正確');
+      _showMessage(copy.invalidBaseUrl);
       return;
     }
 
@@ -539,13 +601,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         return;
       }
       ScaffoldMessenger.of(context).clearSnackBars();
-      _showMessage('AI 設定已儲存，並已通過連線測試；聊天與分析會立即使用新設定');
+      _showMessage(copy.aiSettingsSaved);
     } catch (error) {
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(context).clearSnackBars();
-      _showMessage('AI 設定未儲存：${userFacingAiError(error)}');
+      _showMessage(copy.aiSettingsNotSaved(userFacingAiError(error)));
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -554,12 +616,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _clearAiSettings() async {
+    final copy = _SettingsCopy(ref.read(appLanguageControllerProvider));
     setState(() => _isSaving = true);
     try {
       await ref.read(appConfigProvider.notifier).clearUserConfig();
       final config = ref.read(appConfigProvider);
       _seedFields(config);
-      _showMessage('已清除自訂 AI 設定，系統會回到目前預設模式');
+      _showMessage(copy.aiSettingsCleared);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -569,6 +632,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   void _showMessage(String text) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  Future<void> _saveLanguage(AppLanguage language) async {
+    await ref
+        .read(appLanguageControllerProvider.notifier)
+        .setLanguage(language);
+    if (!mounted) {
+      return;
+    }
+    final copy = _SettingsCopy(language);
+    ScaffoldMessenger.of(context).clearSnackBars();
+    _showMessage(copy.languageSaved);
   }
 
   Future<void> _loadTtsSpeechRate() async {
@@ -586,6 +661,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _saveTtsSpeechRate() async {
+    final copy = _SettingsCopy(ref.read(appLanguageControllerProvider));
     setState(() => _isSavingTtsSpeechRate = true);
     try {
       final normalizedValue = normalizeTtsSpeechRate(_ttsSpeechRate);
@@ -600,7 +676,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _ttsSpeechRate = normalizedValue;
         _hasPendingTtsSpeechRateChanges = false;
       });
-      _showMessage('語音播放速度已更新');
+      _showMessage(copy.voiceSettingsSaved);
     } finally {
       if (mounted) {
         setState(() => _isSavingTtsSpeechRate = false);
@@ -622,14 +698,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
-  String _describeTtsSpeechRate(double value) {
+  String _describeTtsSpeechRate(double value, _SettingsCopy copy) {
     if (value <= 0.45) {
-      return '較慢';
+      return copy.slower;
     }
     if (value >= 0.8) {
-      return '較快';
+      return copy.faster;
     }
-    return '標準';
+    return copy.standard;
   }
 
   String _defaultBaseUrlFor(AppConfig config) {
@@ -645,4 +721,89 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     return _recommendedModel;
   }
+}
+
+class _SettingsCopy {
+  const _SettingsCopy(this.language);
+
+  final AppLanguage language;
+
+  bool get _isZhTw => language == AppLanguage.zhTw;
+
+  String get title => _isZhTw ? '設定' : 'Settings';
+  String get languageSectionTitle => _isZhTw ? '語言' : 'Language';
+  String get languageDescription => _isZhTw
+      ? '選擇 App 顯示語言與 AI 回覆語言。預設語言為英文，變更後會立即套用。'
+      : 'Choose the app display language and AI reply language. English is the default and changes apply immediately.';
+  String get englishOption => _isZhTw ? '英文' : 'English';
+  String get chineseOption => _isZhTw ? '中文' : 'Chinese';
+  String get languageSaved => _isZhTw ? '語言已更新' : 'Language updated';
+
+  String get aiStatusSectionTitle => _isZhTw ? 'AI 狀態' : 'AI Status';
+  String get aiEnabled => _isZhTw ? '已啟用 AI 串接' : 'AI connection enabled';
+  String get aiOffline =>
+      _isZhTw ? '離線模式（未設定 API Key）' : 'Offline mode (no API key)';
+  String get aiOfflineDescription => _isZhTw
+      ? '目前聊天會使用示範回覆；完成下方 AI 設定後，聊天與分析功能都會改用你提供的服務。'
+      : 'Chats currently use demo replies. After you complete the AI settings below, chat and analysis will use your configured service.';
+  String aiStatusDetails({
+    required String model,
+    required bool isUserProvided,
+  }) {
+    if (_isZhTw) {
+      return '模型：$model\n來源：${isUserProvided ? '使用者自訂設定' : '環境變數'}';
+    }
+    return 'Model: $model\nSource: ${isUserProvided ? 'User settings' : 'Environment variables'}';
+  }
+
+  String get aiSettingsSectionTitle => _isZhTw ? 'AI 設定' : 'AI Settings';
+  String get aiSettingsDescription => _isZhTw
+      ? '你可以自行提供 OpenAI 相容 API 的 Base URL、API Key 與模型名稱。為了方便測試，已預設帶入 free_chatgpt_api 建議的 Base URL 與 gpt-4o-mini；你只需要填入 API Key。儲存後，整個 App 的 AI 對話與趨勢分析都會使用這組設定。'
+      : 'You can provide an OpenAI-compatible Base URL, API key, and model name. For easier testing, the recommended free_chatgpt_api Base URL and gpt-4o-mini are prefilled, so you only need to enter an API key. After saving, AI chat and trend analysis will use this configuration.';
+  String get modelFieldLabel => _isZhTw ? '模型' : 'Model';
+  String get saving => _isZhTw ? '儲存中...' : 'Saving...';
+  String get saveAiSettings => _isZhTw ? '儲存 AI 設定' : 'Save AI Settings';
+  String get clearAiSettings => _isZhTw ? '清除 AI 設定' : 'Clear AI Settings';
+  String get missingApiFields => _isZhTw
+      ? '請先填寫 API Base URL 與 API Key'
+      : 'Enter the API Base URL and API key first';
+  String get invalidBaseUrl =>
+      _isZhTw ? 'API Base URL 格式不正確' : 'The API Base URL format is invalid';
+  String get aiSettingsSaved => _isZhTw
+      ? 'AI 設定已儲存，並已通過連線測試；聊天與分析會立即使用新設定'
+      : 'AI settings saved and connection test passed. Chat and analysis will use the new settings immediately.';
+  String aiSettingsNotSaved(String error) =>
+      _isZhTw ? 'AI 設定未儲存：$error' : 'AI settings were not saved: $error';
+  String get aiSettingsCleared => _isZhTw
+      ? '已清除自訂 AI 設定，系統會回到目前預設模式'
+      : 'Custom AI settings cleared. The app will return to the current default mode.';
+
+  String get voiceSectionTitle => _isZhTw ? '語音設定' : 'Voice Settings';
+  String get voiceDescription => _isZhTw
+      ? '調整 AI 回覆朗讀速度。儲存後，聊天頁的語音播放會立即套用新的語速。'
+      : 'Adjust the read-aloud speed for AI replies. After saving, the chat page will use the new speed immediately.';
+  String get currentSpeechRate => _isZhTw ? '目前語速' : 'Current speed';
+  String get slower => _isZhTw ? '較慢' : 'Slower';
+  String get faster => _isZhTw ? '較快' : 'Faster';
+  String get standard => _isZhTw ? '標準' : 'Standard';
+  String get saveVoiceSettings => _isZhTw ? '儲存語音設定' : 'Save Voice Settings';
+  String get voiceSettingsSaved =>
+      _isZhTw ? '語音播放速度已更新' : 'Voice playback speed updated';
+
+  String get dataPrivacySectionTitle => _isZhTw ? '資料與隱私' : 'Data and Privacy';
+  String get dataPrivacyDescription => _isZhTw
+      ? '第一版資料只儲存在本機（SQLite）。你可以隨時在這裡清除資料。\n若你之後自行設定 API Key，聊天內容可能會送到第三方 AI 服務進行生成回覆。'
+      : 'In this first version, data is stored locally in SQLite. You can clear it here at any time.\nIf you later configure your own API key, chat content may be sent to a third-party AI service to generate replies.';
+
+  String get resetSectionTitle => _isZhTw ? '重置' : 'Reset';
+  String get clearLocalDataTitle => _isZhTw ? '清除本機資料' : 'Clear Local Data';
+  String get clearLocalDataDescription => _isZhTw
+      ? '將刪除所有聊天、日記、睡眠、趨勢、AI 報告與設定（包含同意狀態）。此操作無法復原。'
+      : 'This deletes all chats, notes, sleep records, trends, AI reports, and settings, including consent status. This cannot be undone.';
+  String get clearConfirmTitle => _isZhTw ? '確認清除？' : 'Confirm Clear?';
+  String get clearConfirmContent =>
+      _isZhTw ? '確定要清除所有本機資料與設定嗎？' : 'Clear all local data and settings?';
+  String get cancel => _isZhTw ? '取消' : 'Cancel';
+  String get clear => _isZhTw ? '清除' : 'Clear';
+  String get clearDataButton => _isZhTw ? '清除資料' : 'Clear Data';
 }
